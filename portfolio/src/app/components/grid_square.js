@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export default function GridSquare(){
-    const [isEmpty, setIsEmpty] = useState(true);
+    const [value, setValue] = useState("X");
 
-    return(<div className="w-32 h-32">X</div>)
+    return(<div className="w-16 h-16 border-2 border-slate-100 text-center">{value}</div>)
 };

@@ -1,16 +1,24 @@
+import { useState } from "react";
 import GridSquare from "./grid_square";
 
 export default function Grid() {
-    const entries = Array(6);
+    const ROWS = 6;
+    const COLS = 5;
+    const [grid, setGrid] = useState(() =>
+        Array.from({ length: ROWS }, () => Array(COLS).fill(""))
+    );
     return (
         <div>
             <span>Grid</span>
-            {entries.forEach((index)=>{
-                index = Array(6)
-                for(let i = 0; i < 5; i++){
-                    index[i] = GridSquare;
-                }
-            })}
+            <div className="grid grid-cols-5 gap-2">
+                {grid.map((row, r) =>
+                    row.map((char, c) => (
+                        <GridSquare
+                            key={`${r}-${c}`}
+                            value={char}
+                        ></GridSquare>))
+                )}
             </div>
+        </div>
     )
 };
