@@ -7,9 +7,9 @@ import { AiOutlineClose } from "react-icons/ai";
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const navigation = [
-        { name: "Home", href: "#" },
-        { name: "Graphics Assignments", href: "#" },
-        { name: "Contact", href: "#" }
+        { name: "Home", href: "/" },
+        { name: "Graphics Assignments", href: "/graphics" },
+        { name: "Contact", href: "/contact" }
     ];
     return (
         <header className="bg-gradient-to-r from-white to-gray-50 backdrop-blur-sm shadow-lg fixed w-full top-0 z-50 border-b border-gray-100 pb-px">

@@ -9,41 +9,25 @@ export default function Wordle() {
         { type: 'invalid', bg: 'neutral-500', txt: 'stone-50' },
         { type: 'found', bg: 'lime-600', txt: 'stone-50' }
     ]
-    const keyboard = [
-        { letter: 'Q' },
-        { letter: 'W' },
-        { letter: 'E' },
-        { letter: 'R' },
-        { letter: 'T' },
-        { letter: 'Y' },
-        { letter: 'U' },
-        { letter: 'I' },
-        { letter: 'O' },
-        { letter: 'P' },
-        { letter: 'S' },
-        { letter: 'D' },
-        { letter: 'F' },
-        { letter: 'G' },
-        { letter: 'H' },
-        { letter: 'J' },
-        { letter: 'K' },
-        { letter: 'L' },
-        { letter: 'Z' },
-        { letter: 'X' },
-        { letter: 'C' },
-        { letter: 'V' },
-        { letter: 'B' },
-        { letter: 'N' },
-        { letter: 'M' },
-    ]
+
+    //Need this for both the keyboard and the Grid
+    function changeColor(type){
+        if (type == 'invalid'){
+
+        }else if (type == 'found'){
+
+        }
+    }
+
+    //This will be where we check their current word against our word list
+    function checkValid(){
+
+    }
+
     return (
         <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
             <Grid></Grid>
             <Keyboard></Keyboard>
         </main>
-        // <div className="flex flex-col">
-        //     <Grid></Grid>
-        //     <Keyboard></Keyboard>
-        // </div>
     )
 };

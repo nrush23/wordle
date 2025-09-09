@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 
-export default function GridSquare(){
-    const [value, setValue] = useState("X");
-
-    return(<div className="w-16 h-16 border-2 border-slate-100 text-center">{value}</div>)
+export default function GridSquare({ value }){
+    return(<div className="flex items-center justify-center text-center w-16 h-16 border-2 border-slate-100">{value}</div>)
 };
