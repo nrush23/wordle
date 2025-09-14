@@ -1,15 +1,17 @@
 import Header from "../components/header";
 import Image from "next/image";
 
-export default function Home() {
+const prefix = process.env.BASE_PATH || "";
+
+export default function Contacts() {
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <Header></Header>
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <Image
           className="rounded-lg"
-          src="/id.jpg"
-          alt="Next.js logo"
+          src={`${prefix}/id.jpg`}
+          alt="Naria Rush"
           width={180}
           height={38}
           priority
