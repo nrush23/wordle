@@ -1,0 +1,33 @@
+<body bgcolor=black>
+<center><canvas id=canvas width=800 height=800></canvas>
+<script src=webgl.js></script>
+<script>
+
+function Scene() {
+
+this.vertexShader = `#version 300 es
+in  vec3 aPos;
+out vec3 vPos;
+void main() {
+   gl_Position = vec4(aPos, 1.);
+   vPos = aPos;
+}`;
+
+this.fragmentShader = `#version 300 es
+precision highp float;
+in  vec3 vPos;
+out vec4 fragColor;
+void main() {
+
+   vec3 p = vec3(vPos.xy,sqrt(1.-dot(vPos,vPos)));
+   fragColor = vec4(0.);
+   if (p.z > 0.) {
+      float myZ = 1. - p.z;
+      fragColor = vec4(myZ*.5,0.,myZ,1.);
+   }
+}`;
+
+}
+
+gl_start(canvas, new Scene());
+</script>
