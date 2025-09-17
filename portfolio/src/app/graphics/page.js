@@ -2,6 +2,7 @@ import Image from "next/image";
 import Header from "../components/header";
 import Assignment from "../components/assignment";
 
+const prefix = process.env.BASE_PATH || "";
 
 export default function Graphics() {
   return (
@@ -10,7 +11,7 @@ export default function Graphics() {
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <div className="text-center w-full font-semibold">Assignment List</div>
         <ol className="font-mono list-inside text-sm/6 text-center sm:text-left">
-          {/* <Assignment  path={"/graphics"} name={"Assignment 0"} image={"/favicon.ico"}></Assignment> */}
+          <Assignment  path={`${prefix}/graphics/hw1/`} name={"HW 1: Pong"} image={"/pong.png"}></Assignment>
         </ol>
       </main>
     </div>

@@ -38,24 +38,27 @@ function Scene() {
    uniform float uMaxY;
    in  vec3 vPos;
    out vec4 fragColor;
+
    void main() {
+
    float radius = 0.005;
    vec3 origin = vPos - uOgCc;
    fragColor = vec4(0.);
    vec3 p = vec3(vPos.xy, sqrt(radius - dot(origin, origin)));
-   bool inC = p.z > 0.;
+   bool inC = p.z > 0.0;
    float height = 0.1/2.0;
    float width = height * 4.0;
 
    bool inS = uMinX <= vPos.x && vPos.x <= uMaxX && uMinY <= vPos.y && vPos.y <= uMaxY;
    if(inC){
-      fragColor = vec4(1.0);
-   }
-   if (inS){
-      fragColor = vec4(0.462, 0.167, 0.620, 1.0);
-   }
-   if (inC && inS){
-      fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+      float myZ = 1.0 - p.z;
+      fragColor = vec4(myZ * 0.5, 0.0, myZ, 1.0);
+      float d = 0.5 * max(0.0, dot(p, vec3(1.0)));
+      fragColor += vec4(vec3(d), 1.0);
+   }else if (inS){
+      fragColor = vec4(0.5 -0.5 * vPos, 1.);
+   }else{
+      fragColor = vec4(0.0, 0.0, (vPos.x + 1.0)/2.0, 1.0);
    }
 }`;
 

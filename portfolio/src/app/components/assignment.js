@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 
+const prefix = process.env.BASE_PATH || "";
+
 export default function Assignment({ path, name, image = false }) {
     return (
         <li className=" tracking-[-.01em]">
-            <Link className="p-4 rounded-lg border-2 border-slate-100 flex items-center justify-center gap-16" href={path}>
+            <a href={`${prefix}${path}`} className="p-4 rounded-lg border-2 border-slate-100 flex items-center justify-center gap-16">
                 <div className="flex flex-center">{name}</div>
                 {image != false &&
                     <Image
@@ -14,7 +16,7 @@ export default function Assignment({ path, name, image = false }) {
                         width={64}
                         height={64}
                     />}
-            </Link>
+            </a>
         </li>
     )
 }
