@@ -32,7 +32,6 @@ function gl_start(canvas, scene) {
       }, 30);
       if (scene.initialize) { scene.initialize(); }
       if (scene.events) {
-         console.log(scene.events);
          scene.events.forEach(evt => {
             canvas.addEventListener(evt[0], evt[1]);
          });

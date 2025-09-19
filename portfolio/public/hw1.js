@@ -14,9 +14,14 @@ function Scene() {
 
    this.uTime = Date.now() / 1000;
 
+   this.uGrad = -0.3;
+
+   this.uSparkle = false;
+   this.uSpx = 0.0;
+
    //Recommended bounce angle and ball speed from ping pong math equation
    this.MAX_ANGLE = 5 * Math.PI / 12;
-   this.SPEED = 1.0; 
+   this.SPEED = 1.0;
 
    this.vertexShader = `#version 300 es
    in  vec3 aPos;
@@ -36,6 +41,12 @@ function Scene() {
    uniform float uMaxX;
    uniform float uMinY;
    uniform float uMaxY;
+
+   uniform float uGrad;
+
+   uniform bool uSparkle;
+   uniform float uSpx;
+
    in  vec3 vPos;
    out vec4 fragColor;
 
@@ -48,8 +59,10 @@ function Scene() {
    bool inC = p.z > 0.0;
    float height = 0.1/2.0;
    float width = height * 4.0;
+   float pi = 3.141592653589793;
 
    bool inS = uMinX <= vPos.x && vPos.x <= uMaxX && uMinY <= vPos.y && vPos.y <= uMaxY;
+
    if(inC){
       float myZ = 1.0 - p.z;
       fragColor = vec4(myZ * 0.5, 0.0, myZ, 1.0);
@@ -58,31 +71,41 @@ function Scene() {
    }else if (inS){
       fragColor = vec4(0.5 -0.5 * vPos, 1.);
    }else{
-      fragColor = vec4(0.0, 0.0, (vPos.x + 1.0)/2.0, 1.0);
+      fragColor = vec4((sin(uGrad) + 1.0)/7.5, 0.0, (sin(vPos.x + uGrad) + 1.0)/2.0, 1.0);
+   }
+
+   //Make 10 sparkles rotating around the circle that extend outwards
+   if (uSparkle){
+      for(int i = 0; i < 10; i++){
+         float angle = 2.0*pi * (float(i) / 10.0);
+         float ogY = sin(uSpx/pi);
+         float xSp = (uSpx * cos(angle)) - (ogY * sin(angle));
+         float ySp = (uSpx * sin(angle)) + (ogY * cos(angle));
+         vec3 spOg = vPos - vec3(xSp, ySp, 0.0);
+         spOg -= uOgCc;
+         vec3 sp = vec3(vPos.xy, sqrt(0.0001 - dot(spOg, spOg)));
+         if (sp.z > 0.0){
+            fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+         }
+      }
    }
 }`;
 
    this.events = [['keydown', (evt) => {
-      
+
       const delta = 0.06;
       let x = 0;
-      // let y = 0;
-      // //If moving up or down, move by delta
-      // if (evt.key === 'ArrowUp') {
-      //    y = delta;
-      // } else if (evt.key === 'ArrowDown') {
-      //    y = -delta;
-      // }
 
       //If moving left or right, move by delta
-      if (evt.key === 'ArrowLeft') {
+      if (evt.key === 'ArrowLeft' || evt.key === 'a') {
          x = -delta;
-      } else if (evt.key === 'ArrowRight') {
+      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
          x = delta;
       }
       //Update the center of the square
-      this.uOgSq.x += x;
-      // this.uOgSq.y += y;
+      if (-1 <= this.uOgSq.x + x && this.uOgSq.x + x <= 1) {
+         this.uOgSq.x += x;
+      }
 
       //Update the boundaries of the square
       this.uMinX = Math.max(-1.0, this.uOgSq.x - this.width);
@@ -92,14 +115,17 @@ function Scene() {
 
       //Now update the square uniforms
       this.initialize(false);
-   
-      console.log(evt.key);
+
+      // console.log(evt.key);
 
    }]];
 
-   this.initialize = (all=true) => {
-      if(all){
+   this.initialize = (all = true) => {
+      if (all) {
          setUniform('3f', 'uOgCc', this.uOgCc.x, this.uOgCc.y, this.uOgCc.z);
+         setUniform('1f', 'uGrad', this.uGrad);
+         setUniform('1i', 'uSparkle', 0);
+         setUniform('1f', 'uSpx', 0.0);
       }
       setUniform('3f', 'uOgSq', this.uOgSq.x, this.uOgSq.y, this.uOgSq.z);
       setUniform('1f', 'uMinX', this.uMinX);
@@ -116,31 +142,45 @@ function Scene() {
    //Theirs is for a vertical paddle, so I flipped the y and x in my solution
    this.update = () => {
       const new_time = (Date.now() / 1000);
-      const delta = new_time - this.uTime; 
-      
+      const delta = new_time - this.uTime;
+
       //If the square and the circle intersect, we have to change direction
-      if(this.checkIntersection()){
+      if (this.checkIntersection()) {
          let intersectX = Math.max(this.uMinX, Math.min(this.uOgCc.x, this.uMaxX));
          let normal = (intersectX - this.uOgSq.x) / this.width;
-         
+
          let angle = normal * this.MAX_ANGLE;
 
          //Flip y and x because we are a horizontal square
          this.uVel.y = this.SPEED * Math.cos(angle);
          this.uVel.x = this.SPEED * -Math.sin(angle);
+         this.uSparkle = true;
+         this.uSpx = 0.0;
+         setUniform('1i', 'uSparkle', 1);
+         setUniform('1f', 'uSpx', this.uSpx);
+         setTimeout(() => { this.uSparkle = false; this.uSpx = 0.0; setUniform('1i', 'uSparkle', 0); setUniform('1f', 'uSpx', 0.0); }, 1000)
       }
       this.uOgCc.x += this.uVel.x * delta;
       this.uOgCc.y += this.uVel.y * delta;
 
+      if (this.uSparkle) {
+         this.uSpx += 1.0 * delta;
+         setUniform('1f', 'uSpx', this.uSpx);
+      }
+
       //Otherwise, check if we hit a boundary and reverse direction
-      if(this.uOgCc.x > 1.0 - Math.sqrt(this.radius) || this.uOgCc.x < -1.0 + Math.sqrt(this.radius)){
+      if (this.uOgCc.x > 1.0 - Math.sqrt(this.radius) || this.uOgCc.x < -1.0 + Math.sqrt(this.radius)) {
          this.uVel.x = -this.uVel.x;
       }
-      if(this.uOgCc.y > 1.0 - Math.sqrt(this.radius) || this.uOgCc.y < -1.0 + Math.sqrt(this.radius)){
+      if (this.uOgCc.y > 1.0 - Math.sqrt(this.radius) || this.uOgCc.y < -1.0 + Math.sqrt(this.radius)) {
          this.uVel.y = -this.uVel.y;
       }
 
-      this.uTime = new_time; 
+      this.uTime = new_time;
+
+      //Scroll the gradient
+      this.uGrad += 0.5 * delta;
+      setUniform('1f', 'uGrad', this.uGrad);
 
       setUniform('3f', 'uOgCc', this.uOgCc.x, this.uOgCc.y, this.uOgCc.z);
    }
