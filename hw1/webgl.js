@@ -1,4 +1,4 @@
-export function gl_start(canvas, scene) {
+function gl_start(canvas, scene) {
    setTimeout(function() {
       gl = canvas.getContext('webgl2');
       canvas.setShaders = function(vertexShader, fragmentShader) {
