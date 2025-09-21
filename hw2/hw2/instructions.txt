@@ -1,0 +1,14 @@
+Instructions
+Attached is all of the code that we went through in class on the topic of ray tracing to spheres.
+
+Each of these "scenes" is in the state that it was in before I started editing it in class. If you like, you can follow along what I did in class to uncomment out various parts of the code.
+
+Because you are still getting used to the GLSL language and shaders, I am going to make this a relatively easy assignment. Your job is to create your own original scene based on ray tracing to spheres.
+
+Remember that if you can ray trace to a sphere, you can also do many non-obvious things. For example, as I showed in the matrix example toward the end of class, you can string together multiple spheres to create ropes, which can be either straight or curved.
+
+You can also animate the spheres over time, set each sphere's size and color, and add logic in Javascript to simulate various kinds of particle physics, including gravity and bouncing off surfaces.
+
+If you are feeling ambitious, you can also try to make it interactive by tracking the user's mouse movements and having your scene respond to them.
+
+Have fun, be creative, and make something that I will want to show in class next Wednesday!
