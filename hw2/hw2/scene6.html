@@ -49,13 +49,14 @@ vec2 raySphere(vec3 V, vec3 W, vec4 S) {
 vec3 L1 = vec3(1.,1.,1.) / 1.732;
 vec3 L2 = vec3(-1.,-1.,-.5) / 1.5;
 
+/*
 vec3 shadeSphere(vec4 S, vec3 P, vec3 C) {
    vec3 N = (P - S.xyz) / S.w;
    return C * (.1 + max(0., dot(N, L1))
                   + max(0., dot(N, L2)));
-}
+}*/
 
-/*
+
 vec3 shadeSphere(vec4 S, vec3 P, vec3 C) {
    vec3 N = (P - S.xyz) / S.w;
    vec3 shade = vec3(.1);
@@ -63,7 +64,7 @@ vec3 shadeSphere(vec4 S, vec3 P, vec3 C) {
       shade += uLC[l] * max(0., dot(N, uL[l]));
    return C * shade;
 }
-*/
+
 
 void main() {
    vec4 F = vec4(0.);

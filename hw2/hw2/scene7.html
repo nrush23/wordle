@@ -66,7 +66,7 @@ vec3 shadeSphere(vec4 S, vec3 P, vec3 C) {
 
    for (int l = 0 ; l < `+NL+` ; l++)
 
-//   if (! inShadow(P, uL[l]))
+  if (! inShadow(P, uL[l]))
 
       shade += uLC[l] * max(0., dot(N, uL[l]));
    return C * shade;

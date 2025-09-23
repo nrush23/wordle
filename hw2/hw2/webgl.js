@@ -27,7 +27,7 @@ function gl_start(canvas, scene) {
       canvas.setShaders(scene.vertexShader, scene.fragmentShader);
       setInterval(function() {
          if (scene.update)
-	    scene.update([0,0,7]);
+	    scene.update([-10,0,7]);
          gl.drawArrays(gl.TRIANGLES, 0, 6);
       }, 30);
    }, 100);

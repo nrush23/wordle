@@ -108,18 +108,18 @@ this.update = viewPoint => {
                              .7*s,  0 ,.7*c,.3,
                                0 ,.7*c,.7*s,.3 ]);
 */
-   setUniform('3fv', 'uC', [ 1,.5,.5,
+   setUniform('3fv', 'uC', [ 0.5,0.,1.0,
                              .5,.7,1,
                              .5,1,.5 ]);
 
    setUniform('3fv', 'uL', [ normalize([1,1,1]),
                              normalize([-1,-1,-.5]),
-                             normalize([0,-1,0])
+                             normalize([0,1.,0])
 			   ].flat());
 
    setUniform('3fv', 'uLC', [ .5,.7,1,
                               .2,.15,.1,
-			      .5,0,0 ]);
+			      0.0,0,1.0 ]);
 }
 
 }
