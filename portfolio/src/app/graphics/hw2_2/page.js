@@ -13,7 +13,7 @@ export default function HW2() {
         <div className="text-center font-semibold">HW 2_2: Plinko Ball</div>
         <canvas style={{outline:  'none'}}id="glcanvas" tabIndex={0} width="800" height="800" className="bg-black max-w-[700px] max-h-[700px] w-full h-full" />
         <Script src={`${prefix}/hw2_2.js`}></Script>
-        <Script src={`${prefix}/webgl.js`} onLoad={() => { const canvas = document.getElementById("glcanvas"); gl_start(canvas, new Scene());}}></Script>
+        <Script src={`${prefix}/webgl.js`} onLoad={() => { const canvas = document.getElementById("glcanvas"); gl_start(canvas, new Scene(`${prefix}/audio/plink.mp3`));}}></Script>
         <div className="text-center ">Click on the canvas and move the left and right arrow keys or A and D to move the paddle.</div>
       </main>
     </div>

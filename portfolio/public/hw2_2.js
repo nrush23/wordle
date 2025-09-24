@@ -44,8 +44,14 @@ class Rectangle {
       return [this.uOrigin.x, this.uOrigin.y, this.uOrigin.z, this.width, this.height, 0.0];
    }
 
-   checkIntersection() {
-
+   /*Check if Sphere S intersects with this rectangle*/
+   checkIntersection(S) {
+      let X = Math.max(this.uMinX, Math.min(S.uO.x, this.uMaxX));
+      let Y = Math.max(this.uMinY, Math.min(S.uO.y, this.uMaxY));
+      let dX = X - S.uO.x;
+      let dY = Y - S.uO.y;
+      let dist = dX ** 2 + dY ** 2;
+      return dist <= S.uR;
    }
 }
 
@@ -79,11 +85,26 @@ class Sphere {
    getColor() {
       return [this.uC.r, this.uC.g, this.uC.b, this.uC.a];
    }
+
+   /*Check if two spheres intersect by finding if the distance between their centers is less than the sum of their radii*/
+   checkIntersection(S) {
+      const d = Math.sqrt((S.uO.x - this.uO.x) ** 2 + (S.uO.y - this.uO.y) ** 2 + (S.uO.z - this.uO.z) ** 2);
+      return d < (S.uR + this.uR);
+   }
+
+   setColor(C) {
+      this.uC = C;
+   }
 }
 
 
-function Scene() {
+function Scene(path = null) {
 
+
+   if (path != null) {
+      this.audio = new Audio(path);
+      this.audio.loop = false;
+   }
 
    this.uTime = Date.now() / 1000;
    this.uV = { x: 0.0, y: 0.0, z: 0.0 };
@@ -97,26 +118,19 @@ function Scene() {
    this.BALL = NSW + NSP;
    let R = Math.sqrt(0.01);
    this.SPHERES = Array(NSW + 4);
+
+   this.COLOR = 0;
+
+   // this.COLORS = [{ r: 0.8, g: 0.6, b: 1.0, a: 0.6 }, { r: 1.0, g: 0.4, b: 0.4, a: 0.6 }, { r: 0.4, g: 1.0, b: 0.4, a: 0.6 }];
+   this.COLORS = [rgb(0, 62, 106, 0.8), rgb(0, 126, 167, 0.8), rgb(95, 221, 229, 0.8)];
+
    let rem = 2; //Length (1-(-1))/R;
    for (let i = 0; i < NSW; i += 2) {
-      this.SPHERES[i] = new Sphere({ x: -1 + R, y: -1 + (R * i), z: 0.0 }, R, { r: 1.0, g: 1.0, b: 0.6, a: 0.8 }, i);
-      this.SPHERES[i + 1] = new Sphere({ x: 1 - R, y: -1 + (R * i), z: 0.0 }, R, { r: 1.0, g: 1.0, b: 0.6, a: 0.8 }, i + 1);
+      this.SPHERES[i] = new Sphere({ x: -1 + R, y: -1 + (R * i), z: 0.0 }, R, this.COLORS[this.COLOR], i);
+      this.SPHERES[i + 1] = new Sphere({ x: 1 - R, y: -1 + (R * i), z: 0.0 }, R, this.COLORS[this.COLOR], i + 1);
    }
-   this.RECTANGLES = [new Rectangle({ x: -1 + R, y: 0.0, z: 0.0 }, 2 * R, 2.0, 0.0), new Rectangle({ x: -1 + R, y: 0.0, z: 0.0 }, 2 * R, 2.0, 0.0), new Rectangle({ x: 1 - R, y: 0.0, z: 0.0 }, 2 * R, 2.0, 0.0), new Rectangle({ x: 1 - R, y: 0.0, z: 0.0 }, 2 * R, 2.0, 0.0)];
+   this.RECTANGLES = [new Rectangle({ x: -1 + R, y: 0.0, z: 0.0 }, 2 * R, 2.0, 0.0), new Rectangle({ x: 1 - R, y: 0.0, z: 0.0 }, 2 * R, 2.0, 0.0)];
 
-
-   // rem -= R * 2;
-   // let r = 0.05;
-   // let row = 5;
-   // let col = 10;
-
-   // let padding = rem - (2*col *r);
-   // padding /= col + 1;
-
-
-   // for(let i = 0; i <= col; i++){
-   //    this.SPHERES[NSW + i] = new Sphere({x: -1 + R + (padding + r)*(i), y:-1, z:0.0}, r, {r: 0.3, g: 0.0, b: 0.3, a:1.0}, NSW+i);
-   // }
 
    rem -= R * 4;
    let row = 6;
@@ -127,15 +141,13 @@ function Scene() {
 
    for (let j = 0; j < row; j++) {
       for (let i = 0; i < col; i++) {
-         this.SPHERES[NSW + (j * col) + i] = new Sphere({ x: -1 + 2 * R + padding * (i + 1), y: -1 + r + (j * r * 8), z: 0.0 }, r, { r: 1.0, g: 0.75, b: 0.23, a: 0.0 }, NSW + (j * col) + i);
+         // this.SPHERES[NSW + (j * col) + i] = new Sphere({ x: -1 + 2 * R + padding * (i + 1), y: -1 + r + (j * r * 8), z: 0.0 }, r, { r: 1.0, g: 1.0, b: 1.0, a: 0.0 }, NSW + (j * col) + i);
+         this.SPHERES[NSW + (j * col) + i] = new Sphere({ x: -1 + 2 * R + padding * (i + 1), y: -1 + r + (j * r * 8), z: 0.0 }, r, rgb(255, 140, 148, 0), NSW + (j * col) + i);
       }
    }
 
    let rB = 1.75 * r;
    this.SPHERES[NSW + NSP] = new Sphere({ x: 0, y: 1 - 2 * rB, z: 0.0 }, rB, { r: 0.0, g: 1.0, b: 1.0, a: 0.0 }, this.BALL);
-
-   // this.SPHERES[NSW] = new Sphere({x: -0.975 + padding+ (r), y:-1, z:0.0}, r, {r: 0.3, g: 0.0, b: 0.0, a:1.0}, NSW);
-   // this.SPHERES[NSW+1] = new Sphere({x: -0.975 + (padding + r)*2, y:-1, z:0.0}, r, {r: 0.0, g: 0.3, b: 0.0, a:1.0}, NSW);
 
    this.vertexShader = `#version 300 es
    in  vec3 aPos;
@@ -165,13 +177,24 @@ function Scene() {
       }
       return vec2(-b - sqrt(d), -b + sqrt(d));
    }
+   bool inShadow(vec3 P, vec3 L){
+      for (int i = 0 ; i < `+ this.SPHERES.length + ` ; i++) {
+         vec2 tt = raySphere(P, L, uS[i]);
+         if (tt.x < tt.y && tt.x > 0.)
+            return true;
+      }
+      return false;
+   }
    
    vec3 shadeSphere(vec4 S, vec3 P, vec3 C){
       vec3 N = (P - S.xyz) / S.w;
 
       vec3 shade = vec3(.1);
+      if (!inShadow(P, normalize(vec3(0.0,0.0,1.0)))){
+         shade += vec3(1.0) * max(0., dot(N, normalize(vec3(0.0, 0.0, 1.0))));
+      }
 
-      shade += vec3(1.0) * max(0., dot(N, normalize(vec3(0.0, 0.0, 1.0))));
+      
 
       return C * shade;
    }
@@ -181,23 +204,17 @@ function Scene() {
       vec3 V = vec3 (0.,0.,5.);
       vec3 W = normalize(vPos-V);
       float t = 100.;
-      fragColor = vec4(0.42, 0.29, 0.03, 1.);
+      // fragColor = vec4(0.42, 0.29, 0.03, 1.);
+      fragColor = vec4(0.0, (1.0+sin(vPos.y/2.0))/2.0, 1.0, 1.0);
          
    //First, we define the bounding rectangles
    //Border 1: (-1, 1, 0), (-0.75, 1, 0), (-1, -1, 0), (-0.75, -1, 0);
-      int count = 0;
       for(int i = 0; i < `+ this.RECTANGLES.length * 2 + `; i+=2){
          vec3 R = uR[i];
          vec3 BOUNDS = uR[i+1]/2.0;
          if (R.x - BOUNDS.x <= vPos.x && vPos.x <= R.x + BOUNDS.x && R.y - BOUNDS.y <= vPos.y && vPos.y <= R.y + BOUNDS.y){
-            if(count % 2 == 1){
-               fragColor = vec4(0.5, 0., 1., 1.);   
-            }else{
-               // fragColor = vec4(.3, 0., 1., 1.);
-            fragColor = vec4(139./255., 69./255., 19./255.,1.);
-            }
+            // fragColor = vec4(139./255., 69./255., 19./255.,1.);
          }
-         // count++;
       }
 
    //Now we define our spheres
@@ -211,13 +228,6 @@ function Scene() {
             F = vec4(a, 1.0);
             fragColor = vec4(sqrt(F.rgb), F.a);
          }
-         // vec4 S = uS[i];
-         // vec3 p = vPos - S.xyz;
-         // p = vec3(p.xy, sqrt(S.w * S.w - dot(p, p)));
-         // if (p.z > 0.){
-         //    float d = 0.5 * max(0., dot(p, vec3(0.0,1.0, 0.0)));
-         //    fragColor = uSC[i] * (vec4(vec3(d), 1.) + 3.5*vec4(0.2, 0.1, 0.05, 2.0));
-         // }
       }
 }`;
 
@@ -240,6 +250,10 @@ function Scene() {
    }], ['click', (evt) => {
       this.DROP = true;
       this.uTime = Date.now() / 1000;
+   }], ['keydown', (evt) => {
+      if (evt.key === 'r') {
+         this.reset();
+      }
    }]]
 
    this.initialize = (all = true) => {
@@ -258,52 +272,138 @@ function Scene() {
       setUniform('4fv', 'uS', S.flat());
       setUniform('4fv', 'uSC', C.flat());
 
+      setInterval(() => {
+         if (!this.DROP) {
+            this.COLOR++;
+         }
+      }, 1000);
+
    }
 
-   //Our update loop changes the direction of the circle
-   //Our rectangle is moved by the 'keydown' event in this.events
+   function rgb(r, g, b, a) {
+      return { r: r / 255, g: g / 255, b: b / 255, a: a };
+   }
 
-   //Math for updating the circle direction after intersecting the square
-   //taken from: https://gamedev.stackexchange.com/questions/4253/in-pong-how-do-you-calculate-the-balls-direction-when-it-bounces-off-the-paddle
-   //Theirs is for a vertical paddle, so I flipped the y and x in my solution
+   function normalize(V) {
+      let length = Math.sqrt(V.x ** 2 + V.y ** 2 + V.z ** 2);
+      if (length == 0) {
+         return V;
+      }
+      return { x: V.x / length, y: V.y / length, z: V.z / length };
+   }
+
+   function dot(V, N) {
+      return V.x * N.x + V.y * N.y + V.z * N.z;
+   }
+
+   function magnitude(V) {
+      return Math.sqrt(dot(V, V));
+   }
+
+   this.switchLights = (idx) => {
+      return this.COLORS[(this.COLOR + idx) % this.COLORS.length];
+   }
+
+   this.reset = () => {
+      this.DROP = false;
+      // this.COLOR = 0;
+      const s = this.SPHERES[this.BALL];
+      s.setOrigin(0.0, 1.0 - 2 * rB, s.uO.z);
+      this.uV = { x: 0.0, y: 0.0, z: 0.0 };
+      let S = Array(this.SPHERES.length);
+      for (let i = 0; i < this.SPHERES.length; i++) {
+         S[i] = this.SPHERES[i].getPack();
+      }
+      setUniform('4fv', 'uS', S.flat());
+   }
+
    this.update = () => {
+      const new_time = (Date.now() / 1000);
+      const delta = new_time - this.uTime;
+      let C = Array(this.SPHERES.length);
       if (this.DROP) {
-         const new_time = (Date.now() / 1000);
-         const delta = new_time - this.uTime;
+         const e = 0.98;
 
+         //Check for rectangle intersections
          const s = this.SPHERES[this.BALL];
-         let a = -9.8 * delta;
+
+         //Calculate the change by gravity
+
+         let a = -9.8 * delta / 2;
          this.uV.y += a;
          let y = s.uO.y + this.uV.y * delta;
+         let x = s.uO.x + this.uV.x * delta;
+
+         x = Math.max(Math.min(x, 1 - 2 * rB), -1 + 2 * rB);
 
          if (y <= -1 - 2 * rB) {
-            s.setOrigin(0.0, 1.0 - 2 * rB, s.uO.z);
-            this.DROP = false;
-            this.uV.y = 0;
+            // s.setOrigin(0.0, 1.0 - 2 * rB, s.uO.z);
+            // this.DROP = false;
+            // this.uV = { x: 0.0, y: 0.0, z: 0.0 };
+            this.reset();
          } else {
-            s.setOrigin(s.uO.x, y, s.uO.z);
+            s.setOrigin(x, y, s.uO.z);
+         }
+
+         for (let i = 0; i < this.RECTANGLES.length; i++) {
+            const R = this.RECTANGLES[i];
+            if (R.checkIntersection[s]) {
+               console.log("Hit Wall");
+               this.uV.x *= -e;
+            }
          }
          let S = Array(this.SPHERES.length);
-         for (let i = 0; i < this.SPHERES.length; i++) {
-            S[i] = this.SPHERES[i].getPack();
-         }
-         setUniform('4fv', 'uS', S.flat());
+         // let C = Array(this.SPHERES.length);
+         let P;
+         for (let i = 0; i < this.SPHERES.length - 1; i++) {
+            P = this.SPHERES[i];
+            if (P.checkIntersection(s)) {
+               let normal = { x: s.uO.x - P.uO.x, y: s.uO.y - P.uO.y, z: s.uO.z - P.uO.z };
+               let mag = magnitude(normal);
+               let dist = s.uR + P.uR - mag;
+               normal = normalize(normal);
 
+               //Push out from ball
+               s.setOrigin(s.uO.x + normal.x * dist, s.uO.y + normal.y * dist, 0.0);
+
+               let dv = -(1 + e) * dot(this.uV, normal);
+               dv = { x: dv * normal.x, y: dv * normal.y, z: dv * normal.z }
+               this.uV.x += dv.x;
+               this.uV.y += dv.y;
+               this.uV.z += dv.z;
+               if (this.audio) {
+                  const a = this.audio.cloneNode(true);
+                  a.volume = dist / (s.uR + P.uR);
+                  a.play();
+                  a.loop = false;
+               }
+               if (NSW <= i && i < NSW + NSP) {
+                  P.uC.a = 0.8;
+                  setTimeout(() => { this.SPHERES[i].uC.a = 0.0; }, 200);
+               }
+            }
+            if (i < NSW) {
+               const CC = this.switchLights(Math.floor(i / 2));
+               P.uC = { r: CC.r, g: CC.g, b: CC.b, a: 0.4 + 0.6 * (1 + Math.sin(new_time * 4)) / 2 };
+            }
+            S[i] = P.getPack();
+            console.log();
+         }
+         S[this.BALL] = s.getPack();
+         setUniform('4fv', 'uS', S.flat());
          this.uTime = new_time;
       }
+      for (let i = 0; i < this.SPHERES.length; i++) {
+         const P = this.SPHERES[i];
+         if (i < NSW) {
+            if (!this.DROP) {
+               P.uC = this.switchLights(Math.floor(i / 2));
+            }
+         }
+         C[i] = P.getColor();
+      }
+      setUniform('4fv', 'uSC', C.flat());
    }
 
-   //Equation to find whether or not they have any intersection taken from
-   //Geeks for Geeks: Check if any point overlaps the given Circle and Rectangle
-   //Diagonal Rectangle Points are: (MinX, MaxY), (MaxX, minY)
-   //Note: my radius is already squared by default
-   this.checkIntersection = () => {
-      let X = Math.max(this.uMinX, Math.min(this.uOgCc.x, this.uMaxX));
-      let Y = Math.max(this.uMinY, Math.min(this.uOgCc.y, this.uMaxY));
-      let dX = X - this.uOgCc.x;
-      let dY = Y - this.uOgCc.y;
-      let dist = dX ** 2 + dY ** 2;
-      return dist <= this.radius;
-   }
 }
 console.log("HW 2 Scene loaded");

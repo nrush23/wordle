@@ -59,7 +59,7 @@ vec3 shadeSphere(vec4 S, vec3 P, vec3 C) {
 
    vec3 shade = vec3(.1);
 
-   shade *= .5 + .5 * sin(20. * N.y);
+   shade *= sin(20. * N.y);
 
    for (int l = 0 ; l < `+NL+` ; l++)
       if (! inShadow(P, uL[l]))
