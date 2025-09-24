@@ -1,3 +1,5 @@
+//PHYSICS FROM: https://vanhunteradams.com/Pico/Galton/Collisions.html#Bouncing-off-a-round-peg,-with-coefficient-of-restitution
+
 class Rectangle {
    //Origin is the center, width and height the dimensions of the rectangle
    uOrigin;
@@ -10,8 +12,6 @@ class Rectangle {
    uMaxX;
    uMinY;
    uMaxY;
-
-   DROP = false;
 
    constructor(uOrigin, width, height, ID) {
       this.width = width;
@@ -98,12 +98,30 @@ class Sphere {
 }
 
 
-function Scene(path = null) {
 
 
-   if (path != null) {
-      this.audio = new Audio(path);
+function Scene(plink_path = null, music_path = null) {
+
+   this.loadMusic = () =>{
+      this.music.play().catch(()=>{
+         setTimeout(()=>{
+            this.loadMusic();
+         }, 1);
+      });
+   }
+   if (plink_path != null) {
+      this.audio = new Audio(plink_path);
       this.audio.loop = false;
+   }
+
+   if (music_path != null) {
+      const music = new Audio(music_path);
+      music.loop = true;
+      music.volume = 0.05;
+      music.autoplay = true;
+      this.music = music;
+      this.loadMusic();
+      // console.log(music);
    }
 
    this.uTime = Date.now() / 1000;
@@ -120,6 +138,11 @@ function Scene(path = null) {
    this.SPHERES = Array(NSW + 4);
 
    this.COLOR = 0;
+
+   this.DROP = false;
+
+   this.ROW = 6;
+   this.COL = 0;
 
    // this.COLORS = [{ r: 0.8, g: 0.6, b: 1.0, a: 0.6 }, { r: 1.0, g: 0.4, b: 0.4, a: 0.6 }, { r: 0.4, g: 1.0, b: 0.4, a: 0.6 }];
    this.COLORS = [rgb(0, 62, 106, 0.8), rgb(0, 126, 167, 0.8), rgb(95, 221, 229, 0.8)];
@@ -250,6 +273,7 @@ function Scene(path = null) {
    }], ['click', (evt) => {
       this.DROP = true;
       this.uTime = Date.now() / 1000;
+      this.clearPegs();
    }], ['keydown', (evt) => {
       if (evt.key === 'r') {
          this.reset();
@@ -278,6 +302,23 @@ function Scene(path = null) {
          }
       }, 1000);
 
+      setInterval(() => {
+         if (!this.DROP) {
+            this.ROW = (this.ROW == 0) ? 5 : this.ROW - 1;
+         }
+      }, 100);
+
+   }
+
+   this.clearPegs = () => {
+      let C = Array(this.SPHERES.length);
+      for (let i = 0; i < this.SPHERES.length; i++) {
+         if (NSW <= i && i < NSW + NSP) {
+            this.SPHERES[i].uC.a = 0.0;
+         }
+         C[i] = this.SPHERES[i].getColor();
+      }
+      setUniform('4fv', 'uSC', C.flat());
    }
 
    function rgb(r, g, b, a) {
@@ -315,6 +356,11 @@ function Scene(path = null) {
          S[i] = this.SPHERES[i].getPack();
       }
       setUniform('4fv', 'uS', S.flat());
+   }
+
+   this.win = () => {
+
+
    }
 
    this.update = () => {
@@ -399,6 +445,15 @@ function Scene(path = null) {
             if (!this.DROP) {
                P.uC = this.switchLights(Math.floor(i / 2));
             }
+         } else if (NSW <= i < NSW + NSP) {
+            if (!this.DROP) {
+               if (NSW + (this.ROW * col) <= i && i < NSW + (this.ROW * col) + col) {
+                  const CC = this.switchLights(Math.floor(i / 2));
+                  P.uC.a = 0.8;
+               } else {
+                  P.uC.a = 0.0;
+               }
+            }
          }
          C[i] = P.getColor();
       }
@@ -407,3 +462,4 @@ function Scene(path = null) {
 
 }
 console.log("HW 2 Scene loaded");
+
