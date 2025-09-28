@@ -272,11 +272,27 @@ function Scene(plink_path = null, music_path = null) {
       vec3 V = vec3 (0.,0.,5.);
       vec3 W = normalize(vPos-V);
       float t = 100.;
+      float pi = 3.141592653589793;
 
       //Background is a blue/teal gradient
       // fragColor = vec4(0.0, (1.0+sin(vPos.y/2.0))/2.0, 1.0, 1.0);
       float e = 0.01;
-      if(abs(sin(vPos.x*8.0 - uTime/10.0)/2.0 - vPos.y) <= e && -1.0 <= vPos.x && vPos.x <= -0.75){
+      // vec2 og = (vPos.x, sin(vPos.x * 8.0 - uTime/10.0)/2.0);
+      float angle = pi/2.0;
+      vec2 og = vec2(vPos.x, sin(vPos.x * 8.0 - uTime/10.0)/2.0);
+      vec2 rot = vec2(og.x * cos(angle) - og.y * sin(angle),og.x * sin(angle) + og.y * cos(angle));
+      // float xSp = (uSpx * cos(angle)) - (ogY * sin(angle));
+      // float ySp = (uSpx * sin(angle)) + (ogY * cos(angle));
+      // vec2 rot = vec2(og.x * cos(angle) - (og.y * sin(angle)), og.x * sin(angle) + og.y * cos(angle));
+      // vec3 rot = vec3(0.0);
+
+      // if(abs(sin(vPos.x*8.0 - uTime/10.0)/2.0 - vPos.y) <= e && -1.0 <= vPos.x && vPos.x <= -0.75){
+      //    fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      // }else{
+      //    fragColor = vec4(0.0, (1.0+sin(vPos.y/2.0))/2.0, 1.0, 1.0);
+      // }
+
+      if(abs(dot(rot-vPos.xy, rot-vPos.xy)) <= e){
          fragColor = vec4(1.0, 1.0, 1.0, 1.0);
       }else{
          fragColor = vec4(0.0, (1.0+sin(vPos.y/2.0))/2.0, 1.0, 1.0);

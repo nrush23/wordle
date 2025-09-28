@@ -1,0 +1,44 @@
+<body bgcolor=black>
+<center><canvas id=canvas width=800 height=800></canvas>
+<script src=webgl.js></script>
+<script>
+/**************************************
+
+    Ax² + Bxy + Cx + Dy² + Ey + F = 0
+
+    V + tW = (Vx + t * Wx, Vy + t * Wy)
+
+      A (Vx + t * Wx) (Vx + t * Wx)
+    + B (Vx + t * Wx) (Vy + t * Wy)
+    + C (Vx + t * Wx)
+    + D (Vy + t * Wy) (Vy + t * Wy)
+    + E (Vy + t * Wy)
+    + F
+
+  a t² + b t + c = 0
+
+  a = A*Wx*Wx + B* Wx*Wy + D*Wy*Wy
+
+  b = 2*A*Vx*Wx + B*Vx*Wy + C*Wx +
+      2*D*Vy*Wy + B*Vy*Wx + E*Wy
+
+  c = A*Vx*Vx + B*Vx*Vy + C*Vx +
+                D*Vy*Vy + E*Vy + F
+
+***************************************/
+
+function Scene() {
+this.vertexShader = `#version 300 es
+in vec3 aPos;
+void main() { gl_Position = vec4(aPos, 1.); }`;
+
+this.fragmentShader = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+void main() { fragColor = vec4(0.); }`;
+}
+
+gl_start(canvas, new Scene());
+</script>
+
+
