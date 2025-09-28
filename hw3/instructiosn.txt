@@ -1,0 +1,11 @@
+Just like last week, the various 3D scenes we went over in class are in the attached zipfile. The state of each scene is the way it was in class before I started editing it. For example, in scene6.html the code to create a cube from three intersecting slabs is still commented out.
+
+To complete scene2.html you need to add an implementation of the phong function in the fragment shader code.
+
+To make scene4.html, scene5.html and scene 6.html work properly, I would like you to implement the required primitive matrix functions: move(), turnX(), turnY(), turnZ() and scale(), as well as the coefficient matrix (an array of 16 numbers) for each type of quadric surface: sphere, parabX, parabY, parabZ, slabX, slabY, slabZ, tubeX, tubeY, tubeZ and space.
+
+If you'd like, you can also figure out the coefficient matrix for a cone.
+
+Once you've done the above, the scenes will all display properly. 
+
+After you have everything working, please create your own original scene using these techniques of raytracing to quadric surfaces.
