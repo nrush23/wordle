@@ -1,65 +1,66 @@
 <body bgcolor=black>
-<center><canvas id=canvas width=800 height=800></canvas>
-<script src="../webgl.js"></script>
-<script>
+   <center><canvas id=canvas width=800 height=800></canvas>
+      <script src="../webgl.js"></script>
+      <script src="../quadric.js"></script>
+      <script>
 
-/**********************************
+         /**********************************
+         
+             Ax² + Bxy + Cxz + Dx +
+                   Ey² + Fyz + Gy +
+                         Hz² + Iz +
+                               J   =   0
+         
+             V + t * W = [ Vx + t * Wx,
+                           Vy + t * Wy,
+                           Vz + t * Wz ]
+         
+               A (Vx + t * Wx) (Vx + t * Wx)
+             + B (Vx + t * Wx) (Vy + t * Wy)
+             + C (Vx + t * Wx) (Vz + t * Wz)
+             + D (Vx + t * Wx)
+             + E (Vy + t * Wy) (Vy + t * Wy)
+             + F (Vy + t * Wy) (Vz + t * Wz)
+             + G (Vy + t * Wy)
+             + H (Vz + t * Wz) (Vz + t * Wz)
+             + I (Vz + t * Wz)
+             + J
+         
+           a t² + b t + c = 0
+         
+           a = A * Wx * Wx
+             + B * Wx * Wy
+             + C * Wz * Wx
+             + E * Wy * Wy
+             + F * Wy * Wz
+             + H * Wz * Wz
+         
+           b = 2 * A *  Vx * Wx
+             +     B * (Wx * Vy + Vy * Wx)
+             +     C * (Vz * Wx + Vx * Wz)
+             +     D *  Wx
+             + 2 * E *  Vy * Wy
+             +     F * (Vy * Wz + Vz * Wy)
+             +     G *  Wy
+             + 2 * H *  Vz * Wz
+             +     I *  Wz
+         
+           c = A * Vx * Vx
+             + B * Vx * Vy
+             + C * Vz * Vx
+             + D * Vx
+             + E * Vy * Vy
+             + F * Vy * Vz
+             + G * Vy
+             + H * Vz * Vz
+             + I * Vz
+             + J
+         
+         **********************************/
 
-    Ax² + Bxy + Cxz + Dx +
-          Ey² + Fyz + Gy +
-                Hz² + Iz +
-                      J   =   0
+         function Scene() {
 
-    V + t * W = [ Vx + t * Wx,
-                  Vy + t * Wy,
-                  Vz + t * Wz ]
-
-      A (Vx + t * Wx) (Vx + t * Wx)
-    + B (Vx + t * Wx) (Vy + t * Wy)
-    + C (Vx + t * Wx) (Vz + t * Wz)
-    + D (Vx + t * Wx)
-    + E (Vy + t * Wy) (Vy + t * Wy)
-    + F (Vy + t * Wy) (Vz + t * Wz)
-    + G (Vy + t * Wy)
-    + H (Vz + t * Wz) (Vz + t * Wz)
-    + I (Vz + t * Wz)
-    + J
-
-  a t² + b t + c = 0
-
-  a = A * Wx * Wx
-    + B * Wx * Wy
-    + C * Wz * Wx
-    + E * Wy * Wy
-    + F * Wy * Wz
-    + H * Wz * Wz
-
-  b = 2 * A *  Vx * Wx
-    +     B * (Wx * Vy + Vy * Wx)
-    +     C * (Vz * Wx + Vx * Wz)
-    +     D *  Wx
-    + 2 * E *  Vy * Wy
-    +     F * (Vy * Wz + Vz * Wy)
-    +     G *  Wy
-    + 2 * H *  Vz * Wz
-    +     I *  Wz
-
-  c = A * Vx * Vx
-    + B * Vx * Vy
-    + C * Vz * Vx
-    + D * Vx
-    + E * Vy * Vy
-    + F * Vy * Vz
-    + G * Vy
-    + H * Vz * Vz
-    + I * Vz
-    + J
-
-**********************************/
-
-function Scene() {
-
-this.vertexShader = `\
+            this.vertexShader = `\
 #version 300 es
 in  vec3 aPos;
 out vec3 vPos;
@@ -68,7 +69,7 @@ void main() {
    vPos = aPos;
 }`;
 
-this.fragmentShader = `\
+            this.fragmentShader = `\
 #version 300 es
 precision highp float;
 uniform float uTime;
@@ -152,24 +153,26 @@ void main() {
       vec3 N = normalQ(uQ, P);
       float c = .1 + max(0., dot(N, vec3(.5)));
       fragColor = vec4(c,c,c, 1.);
+      fragColor *= vec4(1.0, 0.0, 0.0, 1.0) * sin(20.0 * N.y);
    }
 
 }`;
 
-let startTime = Date.now()/1000;
+            let startTime = Date.now() / 1000;
+            
+            this.update = (viewPoint = [0, 0, 10]) => {
+               let time = Date.now() / 1000 - startTime;
+               const C = new Quadric(1, 0, 0, 0, 1, 0, 0, 1, 0, -.25);
+               setUniform('1f', 'uTime', time);
+               setUniform('3fv', 'uViewPoint', viewPoint);
+               // setUniform('Matrix4fv', 'uQ', false, [1,0,0,0,
+               //                                       0,1,0,0,
+               // 				 0,0,1,0,
+               // 				 0,0,0,-.25]);
+               // C.scale(Math.sin(time), Math.sin(time), Math.sin(time));
+               setUniform('Matrix4fv', 'uQ', false, C.turnY(Math.PI/Math.sin(time)));
+            }
 
-this.update = (viewPoint = [0,0,7]) => {
-   let time = Date.now()/1000 - startTime;
-   setUniform('1f', 'uTime', time);
-   setUniform('3fv', 'uViewPoint', viewPoint);
-   setUniform('Matrix4fv', 'uQ', false, [1,0,0,0,
-                                         0,1,0,0,
-					 0,0,1,0,
-					 0,0,0,-.25]);
-}
-
-}
-gl_start(canvas, new Scene());
-</script>
-
-
+         }
+         gl_start(canvas, new Scene());
+      </script>
