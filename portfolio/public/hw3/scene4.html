@@ -153,24 +153,25 @@ void main() {
       vec3 N = normalQ(uQ, P);
       float c = .1 + max(0., dot(N, vec3(.5)));
       fragColor = vec4(c,c,c, 1.);
-      fragColor *= vec4(1.0, 0.0, 0.0, 1.0) * sin(20.0 * N.y);
+      // fragColor *= vec4(1.0, 0.0, 0.0, 1.0) * sin(20.0 * N.y);
    }
 
 }`;
 
             let startTime = Date.now() / 1000;
-            
+            const C = new Quadric(1, 0, 0, 0, 1, 0, 0, 1, 0, -.25);
+            C.scale(y=2.0);
             this.update = (viewPoint = [0, 0, 10]) => {
                let time = Date.now() / 1000 - startTime;
-               const C = new Quadric(1, 0, 0, 0, 1, 0, 0, 1, 0, -.25);
                setUniform('1f', 'uTime', time);
                setUniform('3fv', 'uViewPoint', viewPoint);
+               C.turnZ(0.1);
                // setUniform('Matrix4fv', 'uQ', false, [1,0,0,0,
                //                                       0,1,0,0,
                // 				 0,0,1,0,
                // 				 0,0,0,-.25]);
                // C.scale(Math.sin(time), Math.sin(time), Math.sin(time));
-               setUniform('Matrix4fv', 'uQ', false, C.turnY(Math.PI/Math.sin(time)));
+               setUniform('Matrix4fv', 'uQ', false, C.m);
             }
 
          }
