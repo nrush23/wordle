@@ -13,7 +13,8 @@ export default function Graphics() {
         <ol className="font-mono list-inside text-sm/6 text-center sm:text-left">
           <Assignment  path={`${prefix}/graphics/hw1/`} name={"HW 1: Pong"} image={`${prefix}/pong.png`}></Assignment>
           <Assignment  path={`${prefix}/graphics/hw2/`} name={"HW 2: Plinko"} image={`${prefix}/plinko.png`}></Assignment>
-          <Assignment  path={`${prefix}/graphics/playground/`} name={"Playground"} image={`${prefix}/plinko.png`}></Assignment>         
+          <Assignment  path={`${prefix}/graphics/playground/`} name={"Playground"} image={`${prefix}/plinko.png`}></Assignment>
+          <Assignment  path={`${prefix}/graphics/hw3/`} name={"HW 3: Polygons"} image={`${prefix}/plinko.png`}></Assignment>          
         </ol>
       </main>
     </div>
