@@ -1,0 +1,9 @@
+For assignment 4, create your own original procedural textures. I have attached the procedural textures that we created in class, which you can use as reference.
+
+Note that I have added an implementation of the noise function into this version of webgl.js, so that will always be available in your fragment shader.
+
+See if you can create the appearance of different natural materials. It helps to look at nature around you for inspiration (I do).
+
+If you like, you can put your procedural textures on objects built from quadric surfaces that you raytrace to, as in the previous assignment.
+
+For extra credit, you can also try to implement reflection and refraction. I have included in the attachment the figure that I shared during class which shows how to use Snell's law to change the direction of a ray as it passes through a refracting surface.
