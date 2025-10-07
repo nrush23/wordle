@@ -31,49 +31,55 @@ class Matrix {
 }
 
 class Quadric extends Matrix {
-    constructor(A, B, C, D, E, F, G, H, I, J) {
-        let M = [[A, B, C, D], [0, E, F, G], [0, 0, H, I], [0, 0, 0, J]].flat();
+    pos = {x:0, y:0, z:0};
+    constructor(A = 0, B = 0, C = 0, D = 0, E = 0, F = 0, G = 0, H = 0, I = 0, J = 0) {
+        // let M = [[A, B, C, D], [0, E, F, G], [0, 0, H, I], [0, 0, 0, J]].flat();
+        let M = [[A, 0, 0, 0], [B, E, 0, 0], [C, F, H, 0], [D, G, I, J]].flat();
         super(M);
     }
 
     move(x, y, z) {
+        this.pos += x;
+        this.poz += y;
+        this.poz += z;
+
         let M2 = new Matrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
         this.qxm(M2);
         return this.m;
     }
 
-    scale(x=1, y=1, z=1){
-        let M2 = new Matrix([x,0,0,0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]);
+    scale(x = 1, y = 1, z = 1) {
+        let M2 = new Matrix([x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]);
         this.qxm(M2);
         return this.m;
     }
 
-    turn(x=0, y=0, z=0){
+    turn(x = 0, y = 0, z = 0) {
         this.turnX(x, true);
         this.turnY(y, true);
         return this.turnZ(z);
     }
 
-    turnX(x=0, chain=false){
-        let RX = new Matrix([1,0,0,0,0, Math.cos(x), -Math.sin(x), 0, 0, Math.sin(x), Math.cos(x), 0, 0, 0, 0, 1]);
+    turnX(x = 0, chain = false) {
+        let RX = new Matrix([1, 0, 0, 0, 0, Math.cos(x), -Math.sin(x), 0, 0, Math.sin(x), Math.cos(x), 0, 0, 0, 0, 1]);
         this.qxm(RX);
-        if(!chain){
+        if (!chain) {
             return this.m;
         }
     }
 
-    turnY(y=0, chain=false){
+    turnY(y = 0, chain = false) {
         let RY = new Matrix([Math.cos(y), 0, Math.sin(y), 0, 0, 1, 0, 0, -Math.sin(y), 0, Math.cos(y), 0, 0, 0, 0, 1]);
         this.qxm(RY);
-        if(!chain){
+        if (!chain) {
             return this.m;
         }
     }
 
-    turnZ(z=0, chain=false){
+    turnZ(z = 0, chain = false) {
         let RZ = new Matrix([Math.cos(z), Math.sin(z), 0, 0, -Math.sin(z), Math.cos(z), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
         this.qxm(RZ);
-        if(!chain){
+        if (!chain) {
             return this.m;
         }
     }

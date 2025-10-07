@@ -2,6 +2,7 @@
    <center><canvas id=canvas width=800 height=800></canvas>
       <script src="../webgl.js"></script>
       <script src="../quadric.js"></script>
+      <script src="../shapes.js"></script>
       <script>
 
          /**********************************
@@ -161,17 +162,22 @@ void main() {
             let startTime = Date.now() / 1000;
             const C = new Quadric(1, 0, 0, 0, 1, 0, 0, 1, 0, -.25);
             C.scale(y=2.0);
-            this.update = (viewPoint = [0, 0, 10]) => {
+
+            const S = new Sphere(1, 1, 1, -0.25);
+            const PX = new SlabY();
+            PX.move(0, 0, 0);
+            PX.scale(1, 0.5, 1);
+            this.update = (viewPoint = [0, 0, 5]) => {
                let time = Date.now() / 1000 - startTime;
                setUniform('1f', 'uTime', time);
                setUniform('3fv', 'uViewPoint', viewPoint);
-               C.turnZ(0.1);
+               // C.turnZ(0.1);
                // setUniform('Matrix4fv', 'uQ', false, [1,0,0,0,
                //                                       0,1,0,0,
                // 				 0,0,1,0,
                // 				 0,0,0,-.25]);
                // C.scale(Math.sin(time), Math.sin(time), Math.sin(time));
-               setUniform('Matrix4fv', 'uQ', false, C.m);
+               setUniform('Matrix4fv', 'uQ', false, PX.m);
             }
 
          }

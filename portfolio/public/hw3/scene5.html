@@ -1,6 +1,8 @@
 <body bgcolor=black>
 <center><canvas id=canvas width=800 height=800></canvas>
 <script src="../webgl.js"></script>
+<script src="../quadric.js"></script>
+<script src="../shapes.js"></script>
 <script>
 
 /**********************************
@@ -154,12 +156,12 @@ let qxm = (Q,M) => {
 }
 
 let startTime = Date.now()/1000;
-
+const TX = new TubeX();
 this.update = (viewPoint = [0,0,7]) => {
    let time = Date.now()/1000 - startTime;
    setUniform('1f', 'uTime', time);
    setUniform('3fv', 'uViewPoint', viewPoint);
-   setUniform('Matrix4fv', 'uQ', false, qxm(tubeX,scale(.1,.1,.1)));
+   setUniform('Matrix4fv', 'uQ', false, TX.scale(0.9,0.9,0.9));
 }
 
 }
