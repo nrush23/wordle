@@ -34,6 +34,7 @@ function Scene() {
       shape.move(0, 0.25, -20);
       shape.scale(0.5, 0.5, 0.5);
       shape.applyAll();
+      shape.setPosition(0, 0, -5);
    });
 
 
@@ -78,7 +79,7 @@ function Scene() {
       HEAD.scale(0.5, 0.5, 0.5);
       HEAD.COLOR = SKIN;
 
-      ZOMBIE = [HEAD, BODY, LEFT_ARM, RIGHT_ARM, RIGHT_LEG, LEFT_LEG];
+      ZOMBIE = [HEAD, LEFT_ARM, RIGHT_ARM, BODY, RIGHT_LEG, LEFT_LEG];
 
       return ZOMBIE;
    }
@@ -88,19 +89,37 @@ function Scene() {
       for (let i = 0; i < Cubes.length; i++) {
          Cubes[i] = new Cube();
          Cubes[i].scale(0.05, 0.05, 0.05);
-         Cubes[i].COLOR = rgb(0, 150, 255, 1);
+         Cubes[i].COLOR = rgb(255, 229, 153, 1);
          Cubes[i].applyAll();
       }
       return Cubes;
    }
 
    function createEnvironment() {
-      const Environment = new Array(1);
+      let Environment = new Array(2);
       const GROUND = new Cube();
       GROUND.scale(5.5, 0.01, 30);
       GROUND.move(0, -1.25, 0);
       GROUND.COLOR = rgb(125, 125, 0, 1);
-      Environment[0] = GROUND;
+
+      const TABLE = new Cube();
+      TABLE.scale(1.0, 0.2, 1.0);
+      TABLE.applyAll();
+      TABLE.move(0, -0.5, 4);
+      TABLE.COLOR = rgb(139, 69, 19, 1);
+
+      const LEFT_BORDER = new Cube();
+      LEFT_BORDER.scale(0.125, 1, 0.125);
+      LEFT_BORDER.applyAll();
+      LEFT_BORDER.move(-0.45, 0, 4);
+      LEFT_BORDER.COLOR = rgb(139, 69, 19, 1);
+
+      const RIGHT_BORDER = new Cube();
+      RIGHT_BORDER.scale(0.125, 1, 0.125);
+      RIGHT_BORDER.applyAll();
+      RIGHT_BORDER.move(0.45, 0, 4);
+      RIGHT_BORDER.COLOR = rgb(139, 69, 19, 1);
+      Environment = [GROUND, TABLE, LEFT_BORDER, RIGHT_BORDER];
       return Environment;
    }
 
@@ -194,6 +213,64 @@ vec3 normalQ(mat4 Q, vec3 P) {
                          2. * H * P.z + F * P.y + C * P.x + I));
 }
 
+vec4 cubeTexture(vec3 P, vec4 C){
+   float a = .5;
+   float b = .52;
+   float s = 0.;
+   float r0 = length(P.xy);
+   float t = mod(uTime, 1.);
+      
+   float u0 = turbulence(vec3(P.x*(2.-t)/2., P.y*(2.-t)/2., .2* t    +2.));
+      
+   float u1 = turbulence(vec3(P.x*(2.-t)   , P.y*(2.-t)   , .2*(t-1.)+2.));
+      
+   float r = min(1., r0 - .1 + 0.3 * mix(u0, u1, t));
+      
+   s = (1. - r) / (1. - b);
+      
+   t = max(0.,min(1., (r0 - a) / (b - a)));
+
+   r = .9 + .1 * noise(13.*P+vec3(0.,0.,uTime));
+   vec4 f0 = vec4(2.*r,r,(r*r+r)/2.,1.);
+
+   vec3 color = vec3(s);
+   float ss = s * s;
+   color = ss*vec3(1.0,ss*ss,ss*ss*ss);
+   vec4 f1 = vec4(color, ss) * C;
+
+   return f1 * C;
+}
+
+vec3 wood(vec3 P, vec3 C){
+   P.y += .5 * turbulence(P);
+   vec3 c = C *
+            mix(2.5, .1,
+	        .5 + .25 * turbulence(vec3(.5,40.,40.) * P+2.*sin(P))
+                   + .25 * turbulence(vec3(40.,40.,.5) * P+2.*sin(P)));
+   c *= .3 + .7 * pow(abs(sin(10. * P.y)), .2);
+   return c;
+}
+
+vec3 cubeTexture2(vec3 P, vec4 C){
+   float v = turbulence(1.5 * P * uTime);
+   float s = sqrt(.5 + .5 * cos(1. * P.x + 8. * v));
+   // return vec3(.8,0.0,.0) * vec3(s,s*s,s*s*s);
+   float b = mix(0.8, 1.0, s);
+   return mix(vec3(0.3,0.0,0.0), C.rgb, b);
+}
+
+vec3 marble(vec3 P) {
+   float v = turbulence(1.5 * P);
+   float s = sqrt(.5 + .5 * sin(20. * P.x + 8. * v));
+   return vec3(.8,.7,.5) * vec3(s,s*s,s*s*s);
+}
+
+vec3 ground(vec3 P){
+   float v = turbulence(1.5 * P);
+   float s = sqrt(.5 + .5 * cos(1. * P.x + 8. * v));
+   return vec3(.8,0.3,.0) * vec3(s,s*s,s*s*s);
+}
+
 void main() {
    // fragColor = vec4(0.6, 0.8, 1.0, 1.0);
    fragColor = vec4(0.0);
@@ -207,10 +284,10 @@ void main() {
    float t = 0.5 + 0.5 * vPos.y;
    if (t > .5)
       t += .3 * turbulence(vPos + vec3(.05*uTime,0.,.1*uTime));
-   vec3 c = vec3(.1,0.,0.);
-   c = mix(c, vec3(0,.4,1.), min(t,.5));
+   vec3 c = vec3(0.,0.,0.);
+   c = mix(c, vec3(0.1,0.,0.0), min(t,.5));
    if (t > 0.65)
-      c = mix(c, vec3(.2,.3,.5), (t-.65) / (.7 - .65));
+      c = mix(c, vec3(.2,.1,0.0), (t-.65) / (.7 - .65));
    fragColor = vec4(sqrt(c), 1.);
 
    vec2 tI [`+ this.NS + `];
@@ -224,7 +301,7 @@ void main() {
          vec2 tQ = findRoots(rayEq(V, W, uQ[k]));
          if(tQ.x > tI[i].x){
             vec3 N = normalQ(uQ[k], V + tQ.x * W);
-            color1 = vec3(.1 + max(0., dot(N, vec3(0.5))));
+            color1 = vec3(.1 + max(0., dot(N, vec3(1.0))));
             tI[i].x = tQ.x;
          }
          if(tQ.y < tI[i].y){
@@ -234,7 +311,19 @@ void main() {
       }
       
       if(tI[i].x > 0. && tI[i].x < tI[i].y && tI[i].x < closest){
-         fragColor =uC[i] *  vec4(sqrt(color1), 1.0);
+         vec3 P = V + tI[i].x * W;
+         if(i==0){
+            fragColor = uC[i]* mix(mix(vec4(marble(P),1.0), uC[i], 0.75), vec4(ground(P),0.1), 0.21);
+         }else if (1 <= i && i <= 3){
+            fragColor = mix(uC[i], vec4(wood(P, uC[i].rgb),1.0), 0.75);
+         }else if (i >= 4 && i <= 11){
+            fragColor = mix(uC[i], vec4(cubeTexture2(P, uC[i]),1.0), 1.0);
+         }else if (12 <= i && i <= 14){
+            fragColor = mix(uC[i], vec4(marble(P), 1.0), 0.15);
+         }else{
+            fragColor = mix(uC[i], vec4(ground(P), 1.0), 0.25);
+         }
+         fragColor *= vec4(sqrt(color1), 1.0);
          closest = tI[i].x;
       }
    }
@@ -242,6 +331,7 @@ void main() {
 
 
    let startTime = Date.now() / 1000;
+   let deltaTime = Date.now() / 1000;
 
    this.events = [['keydown', (evt) => {
       if (this.uQ.length > 0) {
@@ -300,30 +390,20 @@ void main() {
    }
 
    this.update = (viewPoint = [0, 0, 0]) => {
+      let delta = Date.now() / 1000 - deltaTime;
       let time = Date.now() / 1000 - startTime;
       setUniform('1f', 'uTime', time);
-      let V = { x: -1, y: 0, z: 0.0 };
 
-      // C2.move(time*V.x, time*V.y, time*V.z);
-      // C1.move(time*V.x, time*V.y, time*V.z);
-
-      // // C1.move(1.5* time*V.x, 1.5*time*V.y, time*1.5*V.z);
-
-      // if (C2.pos.z >= 6){
-      //    // C2.scale(Math.sin(Math.random()) +0.5, Math.sin(Math.random()) +0.5, Math.sin(Math.random()) +0.5);
-      //    C2.move(-C2.pos.x, -C2.pos.y, -C2.pos.z);
-      //    C2.move(2*Math.sin(Math.random()) - 1, 2*Math.sin(Math.random()) - 1, -20);
-      // }
-      // this.animate(time);
       if (this.SHOOT) {
-         this.animateSpiral(time);
+         this.animateSpiral(delta);
       } else {
          this.initializeCubes();
       }
-      // this.walk(time);
+      this.walk(delta);
       this.reloadShapes();
 
-      startTime = Date.now() / 1000;;
+
+      deltaTime = Date.now() / 1000;
 
       setUniform('Matrix4fv', 'uQ', false, this.uQ);
    }
@@ -333,7 +413,7 @@ void main() {
       const V = { x: 0, y: 0, z: 3 };
       for (let i = 0; i < this.ZOMBIE.length; i++) {
          this.ZOMBIE[i].move(0, 0, V.z * time);
-         if (this.ZOMBIE[i].pos.z >= 3) {
+         if (this.ZOMBIE[i].pos.z >= 15) {
             this.resetZombie();
             return;
          }
@@ -341,10 +421,10 @@ void main() {
    }
 
    this.resetZombie = () => {
+      const OFFSET_X = 2*Math.random() - 1;
       this.ZOMBIE.forEach(shape => {
-         shape.setPosition(0, 0, -27);
          shape.clearRotation();
-         this.Z_ANGLE = 0;
+         shape.setPosition(OFFSET_X, 0, -5);
       })
    }
 
