@@ -124,6 +124,17 @@ uniform vec4 uC[`+ this.SHAPES.length + `];
 in  vec3 vPos;
 out vec4 fragColor;
 
+float turbulence(vec3 P){
+   float f = 0.0, s = 1.0;
+   for(int i = 0 ; i < 8; i++){
+      float t = noise(s*P);
+      f += abs(t) / s;
+      s *= 2.0;
+      P = vec3(0.866*P.x + 0.5*P.z, P.y + 100.0, -0.5*P.x + 0.866*P.z);
+   }
+   return f;
+}
+
 vec3 rayEq(vec3 V, vec3 W, mat4 Q) {
 
    float A = Q[0].x, B = Q[1].x+Q[0].y, C = Q[2].x+Q[0].z, D = Q[3].x+Q[0].w,
@@ -191,6 +202,16 @@ void main() {
    vec3 W = normalize(vPos-V);
 
    vec3 color1 = vec3(0.);
+
+   //First color the background
+   float t = 0.5 + 0.5 * vPos.y;
+   if (t > .5)
+      t += .3 * turbulence(vPos + vec3(.05*uTime,0.,.1*uTime));
+   vec3 c = vec3(.1,0.,0.);
+   c = mix(c, vec3(0,.4,1.), min(t,.5));
+   if (t > 0.65)
+      c = mix(c, vec3(.2,.3,.5), (t-.65) / (.7 - .65));
+   fragColor = vec4(sqrt(c), 1.);
 
    vec2 tI [`+ this.NS + `];
    int k = 0;

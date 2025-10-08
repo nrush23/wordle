@@ -9,39 +9,45 @@ float noise(vec3 p) {
                   mix(_t(i, u, vec3(0.,1.,1.)), _t(i, u, vec3(1.,1.,1.)), v.x), v.y), v.z);
 }`;
 function gl_start(canvas, scene) {
-   setTimeout(function() {
+   setTimeout(function () {
       gl = canvas.getContext('webgl2');
-      canvas.setShaders = function(vertexShader, fragmentShader) {
-	 gl.program = gl.createProgram();
+      canvas.setShaders = function (vertexShader, fragmentShader) {
+         gl.program = gl.createProgram();
          function addshader(type, src) {
             let shader = gl.createShader(type);
             gl.shaderSource(shader, src);
             gl.compileShader(shader);
-            if (! gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
                console.log('Cannot compile shader:', gl.getShaderInfoLog(shader));
             gl.attachShader(gl.program, shader);
          };
          addshader(gl.VERTEX_SHADER, vertexShader);
          let i = fragmentShader.indexOf('float') + 6;
-         addshader(gl.FRAGMENT_SHADER, fragmentShader.substring(0,i) + extraCode + fragmentShader.substring(i));
+         addshader(gl.FRAGMENT_SHADER, fragmentShader.substring(0, i) + extraCode + fragmentShader.substring(i));
          gl.linkProgram(gl.program);
-         if (! gl.getProgramParameter(gl.program, gl.LINK_STATUS))
+         if (!gl.getProgramParameter(gl.program, gl.LINK_STATUS))
             console.log('Could not link the shader program!');
          gl.useProgram(gl.program);
          gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([ -1, 1,0,   1, 1,0,  -1,-1,0,
-	                                                    1,-1,0,  -1,-1,0,   1, 1,0 ]), gl.STATIC_DRAW);
+         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, 0, 1, 1, 0, -1, -1, 0,
+            1, -1, 0, -1, -1, 0, 1, 1, 0]), gl.STATIC_DRAW);
          let aPos = gl.getAttribLocation(gl.program, 'aPos');
          gl.enableVertexAttribArray(aPos);
          gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
       }
       canvas.setShaders(scene.vertexShader, scene.fragmentShader);
-      setInterval(function() {
+      setInterval(function () {
          if (scene.update)
-	    scene.update([0,0,7]);
+            scene.update([0, 0, 7]);
          gl.drawArrays(gl.TRIANGLES, 0, 6);
       }, 30);
+      if (scene.initialize) { scene.initialize(); }
+      if (scene.events) {
+         scene.events.forEach(evt => {
+            canvas.addEventListener(evt[0], evt[1]);
+         });
+      }
    }, 100);
 }
 let gl, _ = {};
-let setUniform = (type,name,a,b,c) => (gl['uniform'+type])(gl.getUniformLocation(gl.program,name), a,b,c);
+let setUniform = (type, name, a, b, c) => (gl['uniform' + type])(gl.getUniformLocation(gl.program, name), a, b, c);
