@@ -1,0 +1,5 @@
+Attached is all of the code for the 3D scenes that we went over in class this week. Your assignment is to use some combination of these shapes, transformed by time-varying matrices, to create your own original animated scene.
+Your scene should contain some sort of hierarchical animation, so you will want to use the push() and pop() methods that are in the Matrix class defined in scene7.html and scene8.html.
+Feel free to be creative and explore the artistic possibilities. Make creatures or spaceships or trees or houses or robots, or anything else that you can think of. Surprise me.
+Feel free to add procedural texture in either the fragment shader or the vertex shader. Note that for your convenience I have already included the GLSL implementation of the noise() function in the vertex shader in scene7.html and scene8.html.
+For extra credit, see if you can create primitive shapes different than the ones we made in class.
