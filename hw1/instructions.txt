@@ -1,0 +1,13 @@
+For this assignment, play around with the fragment shader, and see whether you can create your own interesting scene or patterns. Feel free to be creative. Your solution should animate over time.
+
+Start with the code that I've included in the attached zipfile, which is the same code that we created in class this week. Then replace my fragment shader code with your own original fragment shader code.
+
+See whether you can do things that look very different from what I did in class. Can you create polygonal shapes? Color gradations? Animating wave patterns? Can you make something that looks like text characters? Or alien creatures? The important thing for this assignment is to be creative and have fun.
+
+When you are done, upload the resulting hw1 folder to your NYU CIMS web page, so that it appears on the Web as
+
+     https://[YOUR HOME DIRECTORY]/graphics/hw1/
+
+and then post that web link here on your assignments page, so we we will know that you are done.
+
+One way to upload your hw1 folder to your CIMS account is to zip your folder, then upload hw1.zip, then unzip the folder on your CIMS site.
