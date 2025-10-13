@@ -1,6 +1,6 @@
 class Matrix {
     m;
-    constructor(M = Array(16).fill(0)) {
+    constructor(M = new Float32Array([])) {
         this.m = M;
     }
 
@@ -36,36 +36,30 @@ class Matrix {
         return new Matrix([1, 0, 0, 0, 1, 0, 0, 0, 1]);
     }
 
-    makePerspective(x=0,y=0,z=0){
+    perspective(x = 0, y = 0, z = 0) {
         let P = new Matrix([1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1]);
         return P;
     }
 }
 
-class Quadric extends Matrix {
-    pos = { x: 0, y: 0, z: 0 };
+class Mesh {
+    m;
     T;
     R;
     S;
     Q;
-
     COLOR = [0, 0, 0, 1];
-    constructor(A = 0, B = 0, C = 0, D = 0, E = 0, F = 0, G = 0, H = 0, I = 0, J = 0) {
-        // let M = [[A, B, C, D], [0, E, F, G], [0, 0, H, I], [0, 0, 0, J]].flat();
-        let M = [[A, 0, 0, 0], [B, E, 0, 0], [C, F, H, 0], [D, G, I, J]].flat();
-        super(M);
-
+    V;
+    constructor(M = new Float32Array([])) {
+        this.m = new Matrix(M);
+        this.V = M;
         this.T = new Matrix().identity();
         this.R = new Matrix().identity();
         this.S = new Matrix().identity();
-        this.Q = new Matrix(M).m;
+        this.Q = new Matrix().identity();
     }
 
     move(x, y, z) {
-        this.pos.x += x;
-        this.pos.y += y;
-        this.pos.z += z;
-
         let M2 = new Matrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
         this.T = M2.mxm(this.T)
         this.bake();
@@ -73,10 +67,6 @@ class Quadric extends Matrix {
     }
 
     setPosition(x, y, z) {
-        this.pos.x = x;
-        this.pos.y = y;
-        this.pos.z = z;
-
         let M2 = new Matrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
         this.T = M2;
         this.bake();
@@ -124,7 +114,9 @@ class Quadric extends Matrix {
 
     bake(apply = false) {
         let M = this.T.mxm(this.R.mxm(this.S));
-        this.qxm(M, apply);
+        // this.qxm(M, apply);
+        this.Q = M;
+        this.QI = M.inverse();
     }
 
     applyAll() {
@@ -138,19 +130,38 @@ class Quadric extends Matrix {
         this.S = new Matrix().identity();
     }
 
-    clearRotation(){
+    clearRotation() {
         this.R = new Matrix().identity();
         this.bake();
     }
 
     qxm(M, apply = true) {
         let MI = M.inverse();
-        this.Q = MI.transpose().mxm(this.mxm(MI)).m;
+        this.Q = MI.transpose().mxm(this.m.mxm(MI)).m;
         if (apply) {
-            this.m = MI.transpose().mxm(this.mxm(MI)).m;
+            this.m = MI.transpose().mxm(this.m.mxm(MI)).m;
         }
         return this.Q;
     }
 }
 
-console.log("Loaded Quadric_V2.js");
+class Cube extends Mesh {
+    constructor() {
+        super(new Float32Array([
+            -1, -1, -1, 0, 0, -1, 1, -1, -1, 0, 0, -1, 1, 1, -1, 0, 0, -1,
+            1, 1, -1, 0, 0, -1, -1, 1, -1, 0, 0, -1, -1, -1, -1, 0, 0, -1,
+            -1, -1, 1, 0, 0, 1, 1, -1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1,
+            1, 1, 1, 0, 0, 1, -1, 1, 1, 0, 0, 1, -1, -1, 1, 0, 0, 1,
+
+            -1, -1, -1, 0, -1, 0, 1, -1, -1, 0, -1, 0, 1, -1, 1, 0, -1, 0,
+            1, -1, 1, 0, -1, 0, -1, -1, 1, 0, -1, 0, -1, -1, -1, 0, -1, 0,
+            -1, 1, -1, 0, 1, 0, 1, 1, -1, 0, 1, 0, 1, 1, 1, 0, 1, 0,
+            1, 1, 1, 0, 1, 0, -1, 1, 1, 0, 1, 0, -1, 1, -1, 0, 1, 0,
+
+            -1, -1, -1, -1, 0, 0, -1, 1, -1, -1, 0, 0, -1, 1, 1, -1, 0, 0,
+            -1, 1, 1, -1, 0, 0, -1, -1, 1, -1, 0, 0, -1, -1, -1, -1, 0, 0,
+            1, -1, -1, 1, 0, 0, 1, 1, -1, 1, 0, 0, 1, 1, 1, 1, 0, 0,
+            1, 1, 1, 1, 0, 0, 1, -1, 1, 1, 0, 0, 1, -1, -1, 1, 0, 0,
+        ]))
+    }
+}
