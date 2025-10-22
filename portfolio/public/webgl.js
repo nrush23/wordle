@@ -81,7 +81,11 @@ function gl_start(canvas, scene) {
       if (scene.initialize) { scene.initialize(); }
       if (scene.events) {
          scene.events.forEach(evt => {
-            canvas.addEventListener(evt[0], evt[1]);
+            if (evt.length == 2) {
+               canvas.addEventListener(evt[0], evt[1]);
+            }else{
+               window.addEventListener(evt[0], evt[1]);
+            }
          });
       }
    }, 100);

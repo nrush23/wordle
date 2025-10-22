@@ -50,6 +50,10 @@ class Mesh {
     Q;
     COLOR = [0, 0, 0, 1];
     V;
+    B;
+    mesh;
+
+    children = [];
     constructor(M = new Float32Array([])) {
         this.m = new Matrix(M);
         this.V = M;
@@ -57,7 +61,13 @@ class Mesh {
         this.R = new Matrix().identity();
         this.S = new Matrix().identity();
         this.Q = new Matrix().identity();
+        this.B = new Matrix().identity();
+        this.mesh = {
+            data: this.V,
+        }
     }
+
+
 
     move(x, y, z) {
         let M2 = new Matrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
@@ -66,10 +76,29 @@ class Mesh {
         return this.m;
     }
 
+    getPosition(){
+        return {x: this.T.m[12], y: this.T.m[13], z: this.T.m[14]};
+    }
+
     setPosition(x, y, z) {
         let M2 = new Matrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
         this.T = M2;
         this.bake();
+    }
+
+    setParent(mesh){
+        this.parent = mesh;
+        mesh.children.push(this);
+    }
+
+    getWorldMatrix(){
+        let p = this.parent;
+        let M = this.Q;
+        while(p != null){
+            M = p.Q.mxm(M);
+            p = p.parent;
+        }
+        return M.m;
     }
 
     scale(x = 1, y = 1, z = 1) {
@@ -113,21 +142,27 @@ class Mesh {
     }
 
     bake(apply = false) {
-        let M = this.T.mxm(this.R.mxm(this.S));
-        // this.qxm(M, apply);
+        let M = this.B.mxm(this.T.mxm(this.R.mxm(this.S)));
         this.Q = M;
         this.QI = M.inverse();
     }
 
     applyAll() {
-        this.bake(true);
+        this.B = new Matrix(this.Q.m.slice());
         this.resetTransforms();
+        this.bake();
+        this.children.forEach(child => {
+            child.applyAll();
+        });
     }
 
     resetTransforms() {
         this.T = new Matrix().identity();
         this.R = new Matrix().identity();
         this.S = new Matrix().identity();
+        this.children.forEach(child => {
+            child.resetTransforms();
+        });
     }
 
     clearRotation() {
