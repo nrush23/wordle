@@ -16,6 +16,8 @@ export default function Graphics() {
           <Assignment path={`${prefix}/graphics/hw3/`} name={"HW 3: Polygons"}></Assignment>
           <Assignment path={`${prefix}/graphics/hw4/`} name={"HW 4: Zombie"} image={`${prefix}/hw4/zombie.png`}></Assignment>
           <Assignment path={`${prefix}/graphics/hw5/`} name={"HW 5: Headache"} image={`${prefix}/hw5/room.png`}></Assignment>
+          <Assignment path={`${prefix}/graphics/hw6/`} name={"HW 6: \"Roller Coaster\""} image={`${prefix}/hw6/rollercoaster.png`}></Assignment>
+          <Assignment path={`${prefix}/graphics/hw7/`} name={"HW 7: Snake"} image={`${prefix}/hw7/rollercoaster.png`}></Assignment>
         </ol>
       </main>
     </div>

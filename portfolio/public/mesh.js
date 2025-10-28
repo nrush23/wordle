@@ -178,6 +178,10 @@ class Mesh {
         }
         return this.Q;
     }
+
+    importFrom(text_dump){
+
+    }
 }
 
 class Cube extends Mesh {

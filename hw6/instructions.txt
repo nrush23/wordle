@@ -1,0 +1,7 @@
+Attached is all of the modeling, rendering and animation's code from this week's lecture, including the Utah Teapot data.
+In class we covered a number of spline-related topics, including using splines to create shapes and to do animation.
+Because splines are so general in their power, I am going to open up this assignment to your own preference as to which aspects of computer graphics
+you would like to learn about and explore this week. On a spline-related topic of your choice, while building on the code that I have provided here,
+create something original. You can focus on building interesting shapes based on spline curves or bicubic spline patches, or animation that relies on
+using splines to vary matrices over time, or an interactive system in the general spirit of my spline editor to allow users to interactively
+modify aspects of a scene. Or you can address all of those capabilities. Make something surprising, original and beautiful. Have fun with it!

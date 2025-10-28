@@ -83,7 +83,7 @@ function gl_start(canvas, scene) {
          scene.events.forEach(evt => {
             if (evt.length == 2) {
                canvas.addEventListener(evt[0], evt[1]);
-            }else{
+            } else {
                window.addEventListener(evt[0], evt[1]);
             }
          });
@@ -123,6 +123,11 @@ let turnZ = t => [c(t), s(t), 0, 0, -s(t), c(t), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 let scale = (x, y, z) => [x, 0, 0, 0, 0, y ?? x, 0, 0, 0, 0, z ?? x, 0, 0, 0, 0, 1];
 let perspective = (x, y, z) => [1, 0, 0, x, 0, 1, 0, y ?? x, 0, 0, 1, z ?? x, 0, 0, 0, 1];
 
+let cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+let dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+let norm = v => Math.sqrt(dot(v, v));
+let normalize = v => { let s = norm(v); return v.length == 3 ? [v[0] / s, v[1] / s, v[2] / s] : [v[0] / s, v[1] / s]; }
+let subtract = (a, b) => { let v = []; for (let i = 0; i < a.length; i++) v.push(a[i] - b[i]); return v; }
 // Multiply two matrices.
 
 let mxm = (a, b) => {

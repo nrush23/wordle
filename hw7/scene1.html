@@ -1,0 +1,74 @@
+<body bgcolor=black>
+<center><canvas id=canvas width=800 height=800></canvas>
+<script src=webgl.js></script>
+<script>
+
+// BALLS, TUBES, CUBES, AIM, SIMPLE HIERARCHY
+
+function Scene() {
+
+let ball = Shape.sphereMesh(20,10);
+let tube = Shape.tubeMesh(20);
+let cube = Shape.cubeMesh();
+
+this.vertexShader = Shader.defaultVertexShader;
+this.fragmentShader = Shader.defaultFragmentShader;
+
+autodraw = false;
+
+let M = new Matrix();
+
+let spin = 0;
+mouse.drag = (x,y) => spin += x;
+
+let draw = (mesh, matrix, color) => {
+   let m = mxm(perspective(0,0,-.5),
+           mxm(turnY(spin),
+	       matrix??M.get()));
+   setUniform('Matrix4fv', 'uMF', false, m);
+   setUniform('Matrix4fv', 'uMI', false, inverse(m));
+   setUniform('3fv', 'uColor', color ?? [1,1,1]);
+   drawMesh(mesh);
+   return this;
+}
+
+let createSnake = () =>{
+   let CUBES = [];
+   //body segments
+   const BODY = 7;
+   const MID_X = 0;
+   for(let i = 0; i < BODY; i++){
+      let section = Shape.cubeMesh();
+   }
+}
+
+this.update = () => {
+   let time = Date.now() / 1000 / 10;
+   let P = [ Math.sin(10 * time),
+             Math.sin(12 * time),
+	     Math.sin(14 * time) ];
+   P = resize(normalize(P), .2);
+
+   M.push().move(P).scale(.1);
+      draw(ball);
+   M.pop();
+
+   M.push().move(resize(P,-1)).scale(.1);
+      draw(ball);
+   M.pop();
+
+   M.push().aim(P).scale(.05,.05,norm(P));
+      draw(tube);
+   M.pop();
+
+   M.push().move([0,.5,0]).scale(.1);
+      draw(cube, M.get(), [1,0,0]);
+            draw(mesh)
+   M.pop();
+}
+
+}
+
+gl_start(canvas, new Scene());
+</script>
+
