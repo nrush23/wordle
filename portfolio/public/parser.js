@@ -1,7 +1,7 @@
 let Parser = {
     async importMesh(path_src, file_name) {
         //Get the text stream
-        const stream = await fetch(this.prefix + "/hw7/" + file_name).then(res => res.text());
+        const stream = await fetch(this.prefix + path_src + file_name).then(res => res.text());
         const SPACE = ' ';
         //Now split by lines
         let lines = stream.split('\n')
@@ -45,5 +45,9 @@ let Parser = {
 
         // console.log(data);
         return data;
+    },
+
+    async importAllFrom(folder){
+
     }
 }

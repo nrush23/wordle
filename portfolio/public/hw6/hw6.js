@@ -149,7 +149,7 @@ function Scene(canvas) {
    this.meshes = [C0];
 
 
-   mesh = {
+   roller_coaster = {
       triangle_strip: true,
       data: new Float32Array(wire(100, 10, [BX, BY, BZ, 0.05])),
    };
@@ -603,7 +603,7 @@ void main() {
       setUniform('Matrix4fv', 'uMF', false, m);
       setUniform('Matrix4fv', 'uMI', false, inverse(m));
       setUniform('4fv', 'uC', rgb(160, 160, 160, 1));
-      drawMesh(mesh);
+      drawMesh(roller_coaster);
    }
 
 }
