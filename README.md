@@ -20,10 +20,10 @@ To build this project locally, follow these instructions:
 6. To build the project in an out folder, use `npm run build`
 
 ## Assignment List
-- `Week 1`: Pong
-- `Week 2`: Plinko
-- `Week 3`: Polygons
-- `Week 4`: Zombie
-- `Week 5`: Headache
-- `Week 6`: "Rollercoaster"
-- `Week 7`: Abstract Snake
+- `Week 1`: [Pong](https://cims.nyu.edu/~ncr7500/graphics/hw1/)
+- `Week 2`: [Plinko](https://cims.nyu.edu/~ncr7500/graphics/hw2/)
+- `Week 3`: [Polygons](https://cims.nyu.edu/~ncr7500/graphics/hw3/)
+- `Week 4`: [Zombie](https://cims.nyu.edu/~ncr7500/graphics/hw4/)
+- `Week 5`: [Headache](https://cims.nyu.edu/~ncr7500/graphics/hw5/)
+- `Week 6`: ["Rollercoaster"](https://cims.nyu.edu/~ncr7500/graphics/hw6/)
+- `Week 7`: [Abstract Snake](https://cims.nyu.edu/~ncr7500/graphics/hw7/)
