@@ -1,11 +1,14 @@
 # Computer Graphics Fall 2025 Portfolio
 <p align="center">
     <img src="models/sample_image.png" alt="Assignment Dropdown" width="400"><br>
-    <em>Site containing all my fragment shader and vertex shader assignments using only WebGL and basic JavaScript libraries</em>
+    <em>Site containing all my fragment shader and vertex shader assignments using only WebGL and built in JavaScript libraries</em>
 </p>
 
 
 ## [Live Demo](https://cims.nyu.edu/~ncr7500/graphics/)
+<p algin="center">
+    <image src="models/plinko.gif" alt="Plinko Demo" width="400">
+</p>
 
 ## To compile
 To build this project locally, follow these instructions:
