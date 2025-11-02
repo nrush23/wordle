@@ -7,7 +7,7 @@
 
 ## [Live Demo](https://cims.nyu.edu/~ncr7500/graphics/)
 <p align="center">
-    <image src="models/plinko.gif" alt="Plinko Demo" width="400">
+    <image src="models/plinko_demo.gif" alt="Plinko Demo" width="400">
 </p>
 
 ## To compile
