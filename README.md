@@ -6,7 +6,7 @@
 
 
 ## [Live Demo](https://cims.nyu.edu/~ncr7500/graphics/)
-<p algin="center">
+<p align="center">
     <image src="models/plinko.gif" alt="Plinko Demo" width="400">
 </p>
 
