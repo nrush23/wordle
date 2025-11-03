@@ -1,8 +1,6 @@
 /**
- * CODE FOR PERSPECTIVE TAKEN FROM: https://webglfundamentals.org/webgl/lessons/webgl-3d-perspective.html
- * CODE FOR CAMERA MOVEMENT TAKEN FROM: https://webglfundamentals.org/webgl/lessons/webgl-3d-camera.html
- * CODE FOR PARENTING TAKEN FROM: https://webglfundamentals.org/webgl/lessons/webgl-scene-graph.html
- * CODE FOR STRAFING, COMBO OF THESE TWO: https://stackoverflow.com/questions/66874183/unity3d-character-not-moving-in-the-direction-its-facing, https://www.3dgep.com/understanding-the-view-matrix/
+ * CODE FOR ROPE PHYSICS: https://nehe.gamedev.net/tutorial/rope_physics/17006/
+ * CODE FOR FORCES: https://nehe.gamedev.net/tutorial/introduction_to_physical_simulations/18005/
  * @param {*} canvas 
  */
 
@@ -28,8 +26,11 @@ function Scene(canvas) {
       const folder_path = "/hw7/snake/";
       MESHES = Promise.all(FILES.map(async file => {
          let data = await Parser.importMesh(folder_path, file);
-         return new Mesh(data);
+         let M = new Mesh(data);
+         M.COLOR = rgb(0, 255, 0, 1);
+         return M;
       }));
+
       return MESHES;
    }
    let evalBezier = (t, BX, BY, BZ, getF = false) => {
@@ -66,24 +67,27 @@ function Scene(canvas) {
    }
 
    let CART = new Cube();
-   CART.scale(0.1, 0.02, 0.3);
-   CART.move(0, -0.08, 0);
-   CART.COLOR = rgb(0, 30, 255, 1);
-   // C0.animate = (t) => {
-   //    let p = evalBezier(t / 20 % 1, BX, BY, BZ);
-   //    C0.setPosition(p[0], p[2], p[1]);
-   // }
+   CART.scale(0.025, 0.02, 0.3);
+   CART.move(0, -0.04, -0.5);
+   CART.COLOR = rgb(153,76,0,1 );
+
+   function createWorld() {
+      let background = new Cube();
+      background.scale(50, 50, 50);
+      background.COLOR = rgb(0, 80, 155, 1);
+      return background;
+   }
 
 
    this.canvas = canvas;
 
-   this.meshes = [CART];
+   this.meshes = [createWorld(), CART];
 
 
 
    function createGround() {
       let GROUND = new Cube();
-      GROUND.scale(10, 0.1, 10);
+      GROUND.scale(20, 0.1, 20);
       GROUND.move(0, -0.55, 0);
       GROUND.COLOR = rgb(102, 255, 102, 1);
       return GROUND;
@@ -142,7 +146,7 @@ function Scene(canvas) {
          LEAVES.move(0, 1.5, 0);
          LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
          LEAVES.setParent(TREE);
-         TREE.move(- 8, -0.2, Math.random() * 16 - 8);
+         TREE.move(- 16, -0.2, Math.random() * 32 - 16);
          TREE.turnY(Math.random() * 0.4 - 0.2);
          TREES = TREES.concat([TRUNK, LEAVES]);
       }
@@ -161,7 +165,7 @@ function Scene(canvas) {
          LEAVES.move(0, 1.5, 0);
          LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
          LEAVES.setParent(TREE);
-         TREE.move(10, -0.2, Math.random() * 16 - 8);
+         TREE.move(20, -0.2, Math.random() * 32 - 16);
          TREE.turnY(Math.random() * 0.4 - 0.2);
          TREES = TREES.concat([TRUNK, LEAVES]);
       }
@@ -180,7 +184,7 @@ function Scene(canvas) {
          LEAVES.move(0, 1.5, 0);
          LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
          LEAVES.setParent(TREE);
-         TREE.move(Math.random() * 16 - 8, -0.2, 8);
+         TREE.move(Math.random() * 32 - 16, -0.2, 16);
          TREE.turnY(Math.random() * 0.4 - 0.2);
          TREES = TREES.concat([TRUNK, LEAVES]);
       }
@@ -199,7 +203,7 @@ function Scene(canvas) {
          LEAVES.move(0, 1.5, 0);
          LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
          LEAVES.setParent(TREE);
-         TREE.move(Math.random() * 16 - 8, -0.2, -8);
+         TREE.move(Math.random() * 32 - 16, -0.2, -16);
          TREE.turnY(Math.random() * 0.4 - 0.2);
          TREES = TREES.concat([TRUNK, LEAVES]);
       }
@@ -270,6 +274,7 @@ void main() {
 precision highp float;
 uniform vec4 uC;
 uniform float uTime;
+uniform bool uClouds;
 in  vec3 vPos, vNor;
 out vec4 fragColor;
 
@@ -286,18 +291,21 @@ float turbulence(vec3 P){
 
 void main() {
 
-   // //First color the background
-   // float t = 0.5 + 0.5 * vPos.y;
-   // if (t > .5)
-   //    t += .3 * turbulence(vPos + vec3(.05*uTime,0.,.1*uTime));
-   // vec3 c = vec3(0.8,1.,1.);
-   // c = mix(c, vec3(0.1,0.,0.0), min(t,.5));
-   // if (t > 0.65)
-   //    c = mix(c, vec3(.2,.1,0.0), (t-.65) / (.7 - .65));
-   // fragColor = vec4(sqrt(c), 1.);
-   vec3 nor = normalize(vNor);
-   float c_s = .5 + max(0., dot(vec3(1.0),nor));
-   fragColor = uC * vec4(c_s,c_s,c_s, 1.);
+   //First color the background
+   if (uClouds){
+      float t = 0.5 + 0.5 * vPos.y;
+      if (t > .5)
+         t += .3 * turbulence(vPos + vec3(.05*uTime,0.,.1*uTime));
+      vec3 c = vec3(0.8,1.,1.);
+      c = mix(c, vec3(0.1,0.,0.0), min(t,.5));
+      if (t > 0.65)
+         c = mix(c, vec3(.2,.1,0.0), (t-.65) / (.7 - .65));
+      fragColor = vec4(sqrt(c), 1.);
+   }else{
+      vec3 nor = normalize(vNor);
+      float c_s = .5 + max(0., dot(vec3(1.0),nor));
+      fragColor = uC * vec4(c_s,c_s,c_s, 1.);
+   }
 }`;
 
    let startTime = Date.now() / 1000;
@@ -312,15 +320,101 @@ void main() {
 
    this.initialize = async () => {
       this.SNAKE = await makeSnake();
+      this.HEAD = this.SNAKE.length - 1;
+      this.SNAKE[13].setParent(this.SNAKE[this.HEAD]);
+      this.SNAKE[12].setParent(this.SNAKE[this.HEAD]);
+      this.SNAKE[13].bake();
+      this.SNAKE[13].resetTransforms();
+      this.SNAKE[12].bake();
+      this.SNAKE[12].resetTransforms();
+      this.drawSnake = (time) => {
+         const SNAKE_POS = this.SNAKE[this.HEAD].getPosition(false);
+         const CAM_POS = this.C.getPosition(false);
+         let diff = { x: CAM_POS.x - SNAKE_POS.x, y: CAM_POS.y - SNAKE_POS.y, z: CAM_POS.z - SNAKE_POS.z };
+         const mag = diff.x ** 2 + diff.z ** 2;
+         if (mag > 0.01) {
+            const V = { x: 2.0, y: 0.0, z: 2.0 };
+            const delta = time - prev;
+            let x = 0;
+            let z = 0;
+            if (diff.x < 0) {
+               x = -1;
+            } else if (diff.x > 0) {
+               x = 1;
+            }
 
-      this.drawSnake = () => {
-         let M = new Matrix().identity().m;
-         setUniform('Matrix4fv', 'uMF', false, M);
-         setUniform('Matrix4fv', 'uMI', false, inverse(M));
-         setUniform('4fv', 'uC', [0.0, 1.0, 0.0, 1.0]);
+            if (diff.z < 0) {
+               z = -1;
+            } else if (diff.z > 0) {
+               z = 1;
+            }
+
+            if (x != 0 && z != 0) {
+               x /= 2;
+               z /= 2;
+            }
+            this.SNAKE[this.HEAD].move(x * V.x * delta, 0, z * V.z * delta);
+         }
+         let k = 0.5;
+         const D_ESP = 1;
+         const mass = 1;
+         const damping = 0.5;
+         let NEXT;
+         // let CURR = this.SNAKE[0].getPosition(false);
+         let SPRING;
+         for (let i = 0; i <= this.HEAD; i++) {
+            const mesh = this.SNAKE[i];
+            CURR = mesh.getPosition(false);
+            //Only for the segments
+            if (i < this.HEAD - 2) {
+               //Connect to next segment or the head
+               const NEIGHBOR = (i == this.HEAD - 3) ? this.SNAKE[this.HEAD] : this.SNAKE[i + 1];
+
+               //Spring length is half of our mesh + half our next mesh
+               let springLength = mesh.length.x / 2 + NEIGHBOR.length.x / 2;
+
+               //Spring vector is difference between our two segments
+               NEXT = NEIGHBOR.getPosition(false);
+               SPRING = { x: NEXT.x - CURR.x, y: NEXT.y - CURR.y, z: NEXT.z - CURR.z };
+               let r = Math.sqrt(SPRING.x ** 2 + SPRING.z ** 2);
+               //If the distance is greater than 0, calculate force and apply it to both
+               // k = 1 / springLength;
+               if (r != 0) {
+                  let force = damping * -k * (r - springLength) * D_ESP / r;
+                  force = { x: SPRING.x * force, y: 0, z: SPRING.z * force };
+                  //Now need to apply the force
+                  mesh.applyForce({ x: -force.x, y: -force.y, z: -force.z });
+                  if (i != this.HEAD - 3) {
+                     NEIGHBOR.applyForce(force);
+                  }
+                  mesh.turnY(force.y);
+               }
+            }
+         }
+
+         //Now calculate our accelerations
+         const delta = time - prev;
+         for (let i = 0; i <= this.HEAD - 3; i++) {
+            const mesh = this.SNAKE[i];
+            const force = mesh.force;
+            const V = { x: force.x / mass * delta, y: force.y / mass * delta, z: force.z / mass * delta };
+            mesh.applyVelocity(V);
+            // mesh.velocity = V;
+            mesh.move(mesh.velocity.x * delta, mesh.velocity.y * delta, mesh.velocity.z * delta);
+            mesh.resetForce();
+         }
          this.SNAKE.forEach(mesh => {
+            if (!mesh.parent) {
+               mesh.R.m = this.C.R.m.slice();
+               mesh.bake();
+               mesh.turnY(Math.PI, false, true);
+            }
+            let M = mesh.getWorldMatrix();
+            setUniform('Matrix4fv', 'uMF', false, M);
+            setUniform('Matrix4fv', 'uMI', false, inverse(M));
+            setUniform('4fv', 'uC', mesh.COLOR);
             drawMesh(mesh.mesh);
-         })
+         });
       }
 
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
@@ -350,11 +444,9 @@ void main() {
          this.DOWN = false;
       }
 
-      // if (evt.key === 'Space'){
-      //    this.RISE = true;
-      // }else if (evt.key === 'x'){
-      //    this.RISE = false;
-      // }
+      if (evt.key === ' ' || evt.key === 'x') {
+         this.RISE = 'NONE';
+      }
    }, false], ['keydown', (evt) => {
 
       //If moving left or right, move by delta
@@ -373,6 +465,12 @@ void main() {
 
       if (evt.key === 'r') {
          this.SPIN = !this.SPIN;
+      }
+
+      if (evt.key === ' ') {
+         this.RISE = 'UP';
+      } else if (evt.key === 'x') {
+         this.RISE = 'DOWN';
       }
 
    }, false], ['mousemove', (evt) => {
@@ -484,24 +582,32 @@ void main() {
             y /= 2;
             x /= 2;
          }
+         if (this.RISE === 'DOWN') {
+            z = -V.z;
+         } else if (this.RISE === 'UP') {
+            z = V.z;
+         } else {
+            z = 0;
+         }
 
          // let p = evalBezier(time / 20 % 1, BX, BY, BZ);
          // this.C.setPosition(p[0], p[2] + 0.25, p[1]);
-         this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, 0, -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
+         this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, z * delta, -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
 
          this.updateCam();
 
       }
    }
 
-   this.drawSnake = () => {
+   this.drawSnake = (time) => {
 
    }
 
    this.reloadShapes = () => {
       const N = this.SPIRAL ? this.meshes.length : this.CUBES;
-      this.drawSnake();
+      this.drawSnake(Date.now() / 1000);
       for (let i = 0; i < N; i++) {
+         setUniform('1i', 'uClouds', i == 0 ? 1 : 0);
          let mesh = this.meshes[i];
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);

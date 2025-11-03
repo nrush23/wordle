@@ -20,7 +20,6 @@ vec3 phong(vec3 N, vec3 L, vec3 W, vec3 diffuse, vec4 specular) {
 `;
 
 // INITIALIZE THE WEBGL RENDERER
-
 let autodraw = true;
 let vertexSize = 6;
 let mesh = {
@@ -31,6 +30,7 @@ let mesh = {
       -1, -1, 0, 0, 0, 1,
       1, -1, 0, 0, 0, 1,])
 };
+
 function gl_start(canvas, scene) {
    setTimeout(function () {
       canvas.gl = canvas.getContext('webgl2');

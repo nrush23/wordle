@@ -76,7 +76,7 @@ function gl_start(canvas, scene) {
          if (scene.update)
             scene.update([0, 0, 7]);
          if (autodraw)
-            drawMesh(roller_coaster);
+            drawMesh(mesh);
       }, 30);
       if (scene.initialize) { scene.initialize(); }
       if (scene.events) {
