@@ -1,0 +1,8 @@
+I realize that we covered a lot of material this week, but we didn't actually finish the material on implicit surfaces,
+so this week the assignment is just going to build on the first half of the lecture. You will get to play with implicit surfaces next week. :-)
+I've included all of the source code for the first half of the lecture, in which we discussed how to make an infinitely scalable line font.
+In webgl.js I have included the data for that line font itself, as well as the two text examples (the beginning of Charles Dickens' "A Tale of Two Cities" and a snippet of code).
+Your assignment is to create a 3D scene or animation that builds on this technique. Your scene should consist of shapes that are defined as line paths of constant width.
+Add camera movement into the scene so that a viewer can see it from different points of view. I encourage you to use splines in creating the paths that define the shapes.
+Remember that you can also use any of the other techniques that we have covered so far, including noise-based procedural textures, spring-based dynamics and inverse kinematics.
+And of course you can now add explanatory text and signage into your scene.

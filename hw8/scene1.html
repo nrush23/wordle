@@ -1,0 +1,156 @@
+<body bgcolor=black>
+   <center><canvas id=canvas width=800 height=800></canvas>
+      <script src=webgl.js></script>
+      <script>
+
+         // RENDER A "W"
+
+         function Scene() {
+
+            let createPathsMesh = (width, paths) => {
+               let vertices = [];
+               let addVertex = pos => vertices.push(pos, [0, 0, 1]);
+               for (let n = 0; n < paths.length; n++) {
+                  let path = paths[n];
+                  for (let i = 0; i < path.length - 1; i++) {
+                     let b = path[i];
+                     let c = path[i + 1];
+                     let a = i > 0 ? path[i - 1] : add(b, subtract(b, c));
+                     let da = normalize(subtract(b, a));
+                     let dc = normalize(subtract(c, b));
+                     let db = normalize(add(da, dc));
+                     let s = dot(da, db);
+                     da = resize(da, width / 2);
+                     dc = resize(dc, width / 2);
+                     db = resize(db, width / 2);
+                     let ea = [-da[1], da[0], 0];
+                     let ec = [-dc[1], dc[0], 0];
+                     let eb = [-db[1] / s, db[0] / s, 0];
+                     if (i == 0)
+                        b = subtract(b, da);
+                     if (dot(da, dc) < 0) {
+                        if (n > 0 && i == 0)
+                           addVertex(subtract(b, ea));
+                        addVertex(subtract(b, ea));
+                        addVertex(add(b, ea));
+                        addVertex(subtract(b, ec));
+                        addVertex(add(b, ec));
+                     }
+                     else {
+                        if (n > 0 && i == 0)
+                           addVertex(subtract(b, eb));
+                        addVertex(subtract(b, eb));
+                        addVertex(add(b, eb));
+                     }
+                     if (i == path.length - 2) {
+                        addVertex(subtract(add(c, dc), ec));
+                        addVertex(add(add(c, dc), ec));
+                     }
+                     if (n < paths.length - 1 && i == path.length - 2)
+                        addVertex(add(add(c, dc), ec));
+                  }
+               }
+               return {
+                  triangle_strip: true,
+                  data: new Float32Array(vertices.flat())
+               }
+            }
+
+            this.vertexShader = Shader.defaultVertexShader;
+            this.fragmentShader = Shader.defaultFragmentShader;
+
+            autodraw = false;
+
+            let M = new Matrix();
+
+            let draw = (mesh, matrix, color) => {
+               let m = mxm(perspective(0, 0, -.5), matrix ?? M.get());
+               setUniform('Matrix4fv', 'uMF', false, m);
+               setUniform('Matrix4fv', 'uMI', false, inverse(m));
+               setUniform('3fv', 'uColor', color ?? [1, 1, 1]);
+               drawMesh(mesh);
+               return this;
+            }
+
+            let midpoint = (a, b) => {
+               let m = add(b, a);
+               for (let i = 0; i < m.length; i++) {
+                  m[i] = m[i] / 2;
+               }
+               return m;
+            }
+
+            /* Creates a midpoint triangle based off of the parent triangle's a,b,d points*/
+            let makeTriangle = (triangle) => {
+               const a = triangle[0];
+               const b = triangle[1];
+               const c = triangle[2];
+
+               const m1 = midpoint(a, b);
+               const m2 = midpoint(b, c);
+               const m3 = midpoint(c, a);
+               return [m1, m2, m3, m1];
+            }
+            let meshes = [];
+
+            let makeTriangles = (N) => {
+               meshes = new Array(N);
+               let T = [
+                  [-1, -1, 0],
+                  [1, -1, 0],
+                  [0, 1, 0],
+                  [-1, -1, 0]
+               ];
+               //We need a triangle for each mini triangle, not just the center
+               //Meshes length = 3^N
+               for (let i = 0; i < meshes.length; i++) {
+                  meshes[i] = createPathsMesh(0.01, [T]);
+                  T = makeTriangle(T);
+               }
+            }
+
+            /* Adds all the sublevel triangles to the provided meshes array*/
+            let subLevel = (N, triangles, T) => {
+               if (N == 0) {
+                  return;
+               }
+               //First create our triangle
+               triangles.push(createPathsMesh(0.01, [T]));
+
+               //Get midpoints
+               let M = makeTriangle(T);
+
+               //Get subregion triangles
+               let T1 = [T[1], M[0], M[1], T[1]];
+               let T2 = [T[2], M[1], M[2], T[2]];
+               let T3 = [T[0], M[0], M[2], T[0]];
+
+               let TN = [T1, T2, T3];
+               TN.forEach(TI => {
+                  subLevel(N - 1, triangles, TI);
+               })
+            }
+
+            subLevel(7, meshes, [
+               [-1, -1, 0],
+               [1, -1, 0],
+               [0, 1, 0],
+               [-1, -1, 0]
+            ]);
+
+
+            // makeTriangles(30);
+            const startTime = Date.now() / 1000;
+
+            this.update = () => {
+               let time = Date.now() / 1000;
+               meshes.forEach(mesh => {
+                  draw(mesh, mxm(turnX(0 * time),
+                     mxm(turnY(0 * time),
+                        scale(Math.cos(time)))), [Math.sin(time), Math.cos(time), 0.8]);
+               });
+            }
+         }
+
+         gl_start(canvas, new Scene());
+      </script>
