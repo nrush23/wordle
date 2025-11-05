@@ -1,10 +1,12 @@
 /**
- * CODE FOR ROPE PHYSICS: https://nehe.gamedev.net/tutorial/rope_physics/17006/
- * CODE FOR FORCES: https://nehe.gamedev.net/tutorial/introduction_to_physical_simulations/18005/
  * @param {*} canvas 
  */
 
 function Scene(canvas) {
+   this.yaw = 0;
+   this.pitch = 0;
+   this.PREV_CX = null;
+   this.PREV_CY = null;
    let evalBezier = (t, BX, BY, BZ, getF = false) => {
       let nk = (BX.length - 1) / 3;
 
@@ -27,12 +29,115 @@ function Scene(canvas) {
       return [C(BX.slice(3 * n), f), C(BY.slice(3 * n), f), C(BZ.slice(3 * n), f)];
    }
 
+   let createPathsMesh = (width, paths) => {
+      let vertices = [];
+      let addVertex = pos => vertices.push(pos, [0, 0, 1]);
+      for (let n = 0; n < paths.length; n++) {
+         let path = paths[n];
+         for (let i = 0; i < path.length - 1; i++) {
+            let b = path[i];
+            let c = path[i + 1];
+            let a = i > 0 ? path[i - 1] : add(b, subtract(b, c));
+            let da = normalize(subtract(b, a));
+            let dc = normalize(subtract(c, b));
+            let db = normalize(add(da, dc));
+            let s = dot(da, db);
+            da = resize(da, width / 2);
+            dc = resize(dc, width / 2);
+            db = resize(db, width / 2);
+            let ea = [-da[1], da[0], 0];
+            let ec = [-dc[1], dc[0], 0];
+            let eb = [-db[1] / s, db[0] / s, 0];
+            if (i == 0)
+               b = subtract(b, da);
+            if (dot(da, dc) < 0) {
+               if (n > 0 && i == 0)
+                  addVertex(subtract(b, ea));
+               addVertex(subtract(b, ea));
+               addVertex(add(b, ea));
+               addVertex(subtract(b, ec));
+               addVertex(add(b, ec));
+            }
+            else {
+               if (n > 0 && i == 0)
+                  addVertex(subtract(b, eb));
+               addVertex(subtract(b, eb));
+               addVertex(add(b, eb));
+            }
+            if (i == path.length - 2) {
+               addVertex(subtract(add(c, dc), ec));
+               addVertex(add(add(c, dc), ec));
+            }
+            if (n < paths.length - 1 && i == path.length - 2)
+               addVertex(add(add(c, dc), ec));
+         }
+      }
+      return {
+         triangle_strip: true,
+         data: new Float32Array(vertices.flat())
+      }
+   }
+
+   /*Given two 3D vectors, get their midpoint*/
+   let midpoint = (a, b) => {
+      let m = add(b, a);
+      for (let i = 0; i < m.length; i++) {
+         m[i] = m[i] / 2;
+      }
+      return m;
+   }
+
+   /* Creates a midpoint triangle based off of the parent triangle's a,b,d points*/
+   let makeTriangle = (triangle) => {
+      const a = triangle[0];
+      const b = triangle[1];
+      const c = triangle[2];
+
+      const m1 = midpoint(a, b);
+      const m2 = midpoint(b, c);
+      const m3 = midpoint(c, a);
+      return [m1, m2, m3, m1];
+   }
+
+
+   /* Adds all the sublevel triangles to the provided meshes array*/
+   let subLevel = (N, triangles, T, make_mesh = true) => {
+      if (N == 0) {
+         return;
+      }
+      //First create our triangle
+      const triangle = createPathsMesh(0.005, [T]);
+      if (make_mesh) {
+         triangles.push(new Mesh(triangle.data, triangle.triangle_strip));
+      } else {
+         triangles.push(...triangle.data);
+      }
+
+      //Get midpoints
+      let M = makeTriangle(T);
+
+      //Get subregion triangles
+      let T1 = [T[1], M[0], M[1], T[1]];
+      let T2 = [T[2], M[1], M[2], T[2]];
+      let T3 = [T[0], M[0], M[2], T[0]];
+
+      let TN = [T1, T2, T3];
+      TN.forEach(TI => {
+         subLevel(N - 1, triangles, TI, make_mesh);
+      })
+   }
+
+   /*Create a single Sierpinski triangle mesh */
+   let SIERPINSKI = (N, T) => {
+      let points = [];
+      subLevel(N, points, T, false);
+      return new Mesh(new Float32Array(points.flat()), true);
+   }
+
    this.LEFT = false;
    this.RIGHT = false;
    this.UP = false;
    this.DOWN = false;
-   this.SPIN = true;
-   this.SPIRAL = false;
 
    function rgb(r, g, b, a) {
       return [r / 255, g / 255, b / 255, a];
@@ -41,145 +146,57 @@ function Scene(canvas) {
    let CART = new Cube();
    CART.scale(0.025, 0.02, 0.3);
    CART.move(0, -0.04, -0.5);
-   CART.COLOR = rgb(153,76,0,1 );
+   CART.COLOR = rgb(153, 76, 0, 1);
 
    function createWorld() {
       let background = new Cube();
       background.scale(50, 50, 50);
-      background.COLOR = rgb(0, 80, 155, 1);
+      background.COLOR = rgb(0, 0, 0, 1);
       return background;
    }
 
 
    this.canvas = canvas;
 
-   this.meshes = [ CART];
+   this.meshes = [createWorld()];
 
+   const MESH = SIERPINSKI(8, [[-1, -1, 1], [1, -1, 1], [0, 1, 1], [-1, -1, 1]]);
+   MESH.move(0, 10.25, 0);
+   MESH.scale(21, 15, 15);
+   const MESH2 = MESH.duplicate();
+   const MESH3 = MESH.duplicate();
+   const MESH4 = MESH.duplicate();
+   console.log(MESH);
+   this.meshes.push(MESH);
+   this.meshes.push(MESH2);
+   this.meshes.push(MESH3);
+   this.meshes.push(MESH4);
+
+   MESH2.COLOR = MESH.COLOR;
+   MESH3.COLOR = MESH.COLOR;
+   MESH4.COLOR = MESH.COLOR;
+
+
+   MESH.turnX(Math.PI / 4)
+   MESH2.turnX(-Math.PI / 4);
+
+   MESH3.turnX(Math.PI / 4);
+   MESH3.turnY(Math.PI / 2);
+   MESH4.turnX(-Math.PI / 4);
+   MESH4.turnY(Math.PI / 2);
+
+   MESH2.move(0, 0, -10.5);
+   MESH.move(0, 0, 10.5);
+   MESH3.move(-10.5, 0, 0);
+   MESH4.move(10.5, 0, 0);
 
 
    function createGround() {
       let GROUND = new Cube();
-      GROUND.scale(20, 0.1, 20);
-      GROUND.move(0, -0.55, 0);
-      GROUND.COLOR = rgb(102, 255, 102, 1);
+      GROUND.scale(21, 0.2, 21);
+      GROUND.move(0, -0.55, 1);
+      GROUND.COLOR = rgb(255, 0, 255, 1);
       return GROUND;
-   }
-
-   function createRoom() {
-      let LEFT_WALL = new Cube();
-      LEFT_WALL.scale(0.1, 1, 10);
-      LEFT_WALL.applyAll();
-      LEFT_WALL.move(-100, 0.5, 0);
-
-      LEFT_WALL.COLOR = rgb(24, 59, 46, 1);
-
-      let RIGHT_WALL = new Cube();
-      RIGHT_WALL.scale(0.1, 1, 10);
-      RIGHT_WALL.applyAll();
-      RIGHT_WALL.move(100, 0.5, 0);
-      RIGHT_WALL.COLOR = rgb(39, 105, 78, 1);
-
-      let BACK_WALL = new Cube();
-      BACK_WALL.scale(10, 1, 0.1);
-      BACK_WALL.applyAll();
-      BACK_WALL.move(0, 0.5, -100);
-      BACK_WALL.COLOR = rgb(76, 152, 118, 1);
-
-      let FRONT_WALL = new Cube();
-      FRONT_WALL.scale(10, 1, 0.1);
-      FRONT_WALL.applyAll();
-      FRONT_WALL.move(0, 0.5, 100);
-      FRONT_WALL.COLOR = rgb(144, 199, 164, 1);
-
-      let ROOF = new Cube();
-      ROOF.scale(10, 0.1, 10);
-      ROOF.applyAll();
-      ROOF.move(0, 16, 0);
-      ROOF.COLOR = rgb(24, 59, 46, 1);
-
-
-
-      return [LEFT_WALL, RIGHT_WALL, BACK_WALL, FRONT_WALL, ROOF];
-   }
-
-   function createTrees() {
-      let TREES = [];
-      for (let i = 0; i < 5; i++) {
-         let TREE = new Mesh();
-         let TRUNK = new Cube();
-         TRUNK.scale(0.2, 1, 0.2);
-         TRUNK.applyAll();
-         TRUNK.move(0, 0.5, 0);
-         TRUNK.COLOR = rgb(102, 51, 0, 1);
-         TRUNK.setParent(TREE);
-         let LEAVES = new Cube();
-         LEAVES.scale(0.7, 0.7, 0.7);
-         LEAVES.applyAll();
-         LEAVES.move(0, 1.5, 0);
-         LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
-         LEAVES.setParent(TREE);
-         TREE.move(- 16, -0.2, Math.random() * 32 - 16);
-         TREE.turnY(Math.random() * 0.4 - 0.2);
-         TREES = TREES.concat([TRUNK, LEAVES]);
-      }
-
-      for (let i = 0; i < 5; i++) {
-         let TREE = new Mesh();
-         let TRUNK = new Cube();
-         TRUNK.scale(0.2, 1, 0.2);
-         TRUNK.applyAll();
-         TRUNK.move(0, 0.5, 0);
-         TRUNK.COLOR = rgb(102, 51, 0, 1);
-         TRUNK.setParent(TREE);
-         let LEAVES = new Cube();
-         LEAVES.scale(0.7, 0.7, 0.7);
-         LEAVES.applyAll();
-         LEAVES.move(0, 1.5, 0);
-         LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
-         LEAVES.setParent(TREE);
-         TREE.move(20, -0.2, Math.random() * 32 - 16);
-         TREE.turnY(Math.random() * 0.4 - 0.2);
-         TREES = TREES.concat([TRUNK, LEAVES]);
-      }
-
-      for (let i = 0; i < 5; i++) {
-         let TREE = new Mesh();
-         let TRUNK = new Cube();
-         TRUNK.scale(0.2, 1, 0.2);
-         TRUNK.applyAll();
-         TRUNK.move(0, 0.5, 0);
-         TRUNK.COLOR = rgb(102, 51, 0, 1);
-         TRUNK.setParent(TREE);
-         let LEAVES = new Cube();
-         LEAVES.scale(0.7, 0.7, 0.7);
-         LEAVES.applyAll();
-         LEAVES.move(0, 1.5, 0);
-         LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
-         LEAVES.setParent(TREE);
-         TREE.move(Math.random() * 32 - 16, -0.2, 16);
-         TREE.turnY(Math.random() * 0.4 - 0.2);
-         TREES = TREES.concat([TRUNK, LEAVES]);
-      }
-
-      for (let i = 0; i < 5; i++) {
-         let TREE = new Mesh();
-         let TRUNK = new Cube();
-         TRUNK.scale(0.2, 1, 0.2);
-         TRUNK.applyAll();
-         TRUNK.move(0, 0.5, 0);
-         TRUNK.COLOR = rgb(102, 51, 0, 1);
-         TRUNK.setParent(TREE);
-         let LEAVES = new Cube();
-         LEAVES.scale(0.7, 0.7, 0.7);
-         LEAVES.applyAll();
-         LEAVES.move(0, 1.5, 0);
-         LEAVES.COLOR = rgb(0, 153 + (Math.random() * 10 - 20), 0, 1);
-         LEAVES.setParent(TREE);
-         TREE.move(Math.random() * 32 - 16, -0.2, -16);
-         TREE.turnY(Math.random() * 0.4 - 0.2);
-         TREES = TREES.concat([TRUNK, LEAVES]);
-      }
-      return TREES
    }
 
    function createArms() {
@@ -187,31 +204,14 @@ function Scene(canvas) {
       LEFT_ARM.scale(0.01, 0.01, 0.1);
       LEFT_ARM.applyAll();
       LEFT_ARM.move(-3, -5.2, -1.8);
-      LEFT_ARM.COLOR = rgb(255, 255, 255, 1);
+      LEFT_ARM.COLOR = rgb(200, 0, 0, 1);
 
       let RIGHT_ARM = new Cube();
       RIGHT_ARM.scale(0.01, 0.01, 0.1);
       RIGHT_ARM.applyAll();
       RIGHT_ARM.move(3, -5.2, -1.8);
-      RIGHT_ARM.COLOR = rgb(255, 255, 255, 1);
+      RIGHT_ARM.COLOR = rgb(255, 0, 0, 1);
       return [LEFT_ARM, RIGHT_ARM];
-   }
-
-
-   this.createSpiral = () => {
-      const Cubes = new Array(8);
-      this.CENTER = new Mesh();
-      this.CENTER.applyAll();
-      for (let i = 0; i < Cubes.length; i++) {
-         Cubes[i] = new Cube();
-         Cubes[i].scale(0.05, 0.05, 0.05);
-         Cubes[i].COLOR = rgb(145, 224, 244, 10);
-         Cubes[i].applyAll();
-
-         Cubes[i].setParent(this.CENTER);
-      }
-      this.CENTER.move(0, 0, -0.5);
-      return Cubes;
    }
 
 
@@ -219,12 +219,6 @@ function Scene(canvas) {
    this.meshes = this.meshes.concat(this.GROUND);
    const ARMS = createArms();
    this.meshes = this.meshes.concat(ARMS);
-
-   this.meshes = this.meshes.concat(createTrees());
-
-
-   this.CUBES = this.meshes.length;
-   this.meshes = this.meshes.concat(this.createSpiral());
 
    this.P = new Matrix()
 
@@ -261,22 +255,80 @@ float turbulence(vec3 P){
    return f;
 }
 
-void main() {
+vec4 cubeTexture(vec3 P, vec4 C){
+   float a = .5;
+   float b = .52;
+   float s = 0.;
+   float r0 = length(P.xy);
+   float t = mod(uTime, 1.);
+      
+   float u0 = turbulence(vec3(P.x*(2.-t)/2., P.y*(2.-t)/2., .2* t    +2.));
+      
+   float u1 = turbulence(vec3(P.x*(2.-t)   , P.y*(2.-t)   , .2*(t-1.)+2.));
+      
+   float r = min(1., r0 - .1 + 0.3 * mix(u0, u1, t));
+      
+   s = (1. - r) / (1. - b);
+      
+   t = max(0.,min(1., (r0 - a) / (b - a)));
 
+   r = .9 + .1 * noise(13.*P+vec3(0.,0.,uTime));
+   vec4 f0 = vec4(2.*r,r,(r*r+r)/2.,1.);
+
+   vec3 color = vec3(s);
+   float ss = s * s;
+   color = ss*vec3(1.0,ss*ss,ss*ss*ss);
+   vec4 f1 = vec4(color, ss) * C;
+
+   return f1 * C;
+}
+
+vec3 wood(vec3 P, vec3 C){
+   P.y += .5 * turbulence(P);
+   vec3 c = C *
+            mix(2.5, .1,
+	        .5 + .25 * turbulence(vec3(.5,40.,40.) * P+2.*sin(P))
+                   + .25 * turbulence(vec3(40.,40.,.5) * P+2.*sin(P)));
+   c *= .3 + .7 * pow(abs(sin(10. * P.y)), .2);
+   return c;
+}
+
+vec3 cubeTexture2(vec3 P, vec4 C){
+   float v = turbulence(1.5 * P * uTime);
+   float s = sqrt(.5 + .5 * cos(1. * P.x + 8. * v));
+   // return vec3(.8,0.0,.0) * vec3(s,s*s,s*s*s);
+   float b = mix(0.8, 1.0, s);
+   return mix(vec3(0.3,0.0,0.0), C.rgb, b);
+}
+
+vec3 marble(vec3 P) {
+   float v = turbulence(1.5 * P);
+   float s = sqrt(1.0 + 1.0 * sin(20. * P.x + 8. * v *uTime));
+   return vec3(1.0,1.0,1.0) * vec3(s,s*s,s*s*s);
+}
+
+vec3 ground(vec3 P){
+   P = P + vec3(sin(uTime), noise(P), cos(uTime));
+   float v = turbulence(1.5 * P);
+   float s = sqrt(1.0 + cos(1. * P.x + 8. * v * noise(P)*uTime));
+   return vec3(1.0,1.,1.0) * vec3(s,s*s,s*s*s);
+}
+
+void main() {
    //First color the background
-   if (uClouds){
-      float t = 0.5 + 0.5 * vPos.y;
-      if (t > .5)
-         t += .3 * turbulence(vPos + vec3(.05*uTime,0.,.1*uTime));
-      vec3 c = vec3(0.8,1.,1.);
-      c = mix(c, vec3(0.1,0.,0.0), min(t,.5));
-      if (t > 0.65)
-         c = mix(c, vec3(.2,.1,0.0), (t-.65) / (.7 - .65));
-      fragColor = vec4(sqrt(c), 1.);
-   }else{
+   float t = 0.02 * vPos.y;
+   if (t > .5)
+      t -= .3 * turbulence(vPos + vec3(uTime,0.,.1*uTime));
+   vec3 c = vec3(0.,0.,0.);
+   c = mix(c, vec3(0.1,0.,0.0), min(t,.5));
+   if (t > 0.65)
+      c = mix(c, vec3(.2,0.,0.0), (t-.65) / (.7 - .65));
+   fragColor = vec4(sqrt(c), 1.);
+   if (!uClouds){
       vec3 nor = normalize(vNor);
-      float c_s = .5 + max(0., dot(vec3(1.0),nor));
-      fragColor = uC * vec4(c_s,c_s,c_s, 1.);
+      vec3 L = vec3(2.0,1.0,2.0);
+      float c_s = .5 + max(0., dot(normalize(L),nor));
+      fragColor = uC * vec4(c_s,c_s,c_s, uC.a);
    }
 }`;
 
@@ -299,7 +351,7 @@ void main() {
       ARMS.forEach(arm => {
          arm.setParent(this.C);
       });
-      this.CENTER.setParent(this.C);
+      // this.CENTER.setParent(this.C);
       CART.setParent(this.C);
 
       this.C.move(0, 0, 3);
@@ -318,7 +370,7 @@ void main() {
          this.DOWN = false;
       }
 
-      if (evt.key === ' ' || evt.key === 'x') {
+      if (evt.key === ' ' || evt.key === 'Shift') {
          this.RISE = 'NONE';
       }
    }, false], ['keydown', (evt) => {
@@ -337,94 +389,48 @@ void main() {
          this.DOWN = true;
       }
 
-      if (evt.key === 'r') {
-         this.SPIN = !this.SPIN;
-      }
 
       if (evt.key === ' ') {
          this.RISE = 'UP';
-      } else if (evt.key === 'x') {
+      } else if (evt.key === 'Shift') {
          this.RISE = 'DOWN';
       }
 
    }, false], ['mousemove', (evt) => {
       if (this.C) {
 
-         //As long as the ball is not dropping, use the clientX coordinate
-         //and dimensions of the canvas to normalize the values from [0,1]
-         const canvas = evt.currentTarget;
-         const canvasR = canvas.getBoundingClientRect();
-         const normX = (evt.clientX - canvasR.left) / canvasR.width;
+         //Treat rotation like velocity + position update
+         const V = 0.005 * 4;
+         if (Math.abs(evt.movementX) < Math.abs(evt.movementY)) {
+            this.pitch += evt.movementY * V;
+            this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+         } else {
+            this.yaw += evt.movementX * V;
+         }
 
-         //After normalizing, multiply by 2 and subtract by 1 to get coords
-         //in the range [-1, 1] to match our WebGL coordinates
-         let coord = normX * 2 - 1;
-
-         //Now clamp by the our Sphere Wall boundaries and add our ball radius
-         //so it does not overlap
-         coord = Math.max(-1, Math.min(1, coord));
          this.C.clearRotation();
-         this.C.turnY(coord * Math.PI);
+         this.C.turnX(this.pitch);
+         this.C.turnY(this.yaw);
          this.updateCam();
       }
    }], ['click', (evt) => {
-      
+
    }]];
 
    this.update = () => {
       let time = Date.now() / 1000;
       this.updateMovement(time);
-      if (this.SPIRAL && this.CUBES) {
-         this.animateSpiral(time);
-      } else {
-         this.initializeCubes();
-      }
+      COLOR = rgb(127.5 * Math.sin(time) + 127.5, 0, 0);
+      MESH.COLOR = COLOR;
+      MESH2.COLOR = COLOR;
+      MESH3.COLOR = COLOR;
+      MESH4.COLOR = COLOR;
+      this.GROUND.COLOR = COLOR;
+      setUniform('1f', 'uTime', time - startTime);
       this.reloadShapes();
-      setUniform('1f', 'uTime', time);
       prev = time;
    }
-   const SPIRAL_N = this.meshes.length - this.CUBES;
-   //Travel each cube along a spiral rotate by 2PI/ i degrees
-   this.theta_prev = new Array(SPIRAL_N);
-   for (let i = 0; i < SPIRAL_N; i++) {
-      this.theta_prev[i] = Math.PI * 2 * i / SPIRAL_N;
-   }
-   this.animateSpiral = (time) => {
-      let delta = time - prev;
-      let V = { x: 2, y: 2, z: -20 };
 
-
-      let r = 5;
-
-      for (let i = 0; i < SPIRAL_N; i++) {
-         let new_theta = this.theta_prev[i] + V.x * delta;
-         const d = { x: r * Math.sin(new_theta) - r * Math.sin(this.theta_prev[i]), y: V.y * delta * (i + 1) / 10, z: r * Math.cos(new_theta) - r * Math.cos(this.theta_prev[i]) + V.z * delta };
-         this.meshes[i + this.CUBES].move(d.x, d.y, d.z);
-         this.meshes[i + this.CUBES].turnY(d.z);
-         this.meshes[i + this.CUBES].turnX(d.x);
-         if (this.meshes[i + this.CUBES].getPosition().y >= 15) {
-            this.resetCubes();
-            return;
-         } else {
-            this.theta_prev[i] = new_theta;
-         }
-      }
-   }
-   this.initializeCubes = () => {
-      for (let i = this.CUBES; i < this.meshes.length; i++) {
-         this.meshes[i].setPosition(this.CUBES_X, 0, 0);
-         this.meshes[i].clearRotation();
-      }
-   }
-
-   this.resetCubes = () => {
-      this.SPIRAL = false;
-      for (let i = 0; i < SPIRAL_N; i++) {
-         this.theta_prev[i] = Math.PI * 2 * i / SPIRAL_N;
-         const pos = this.meshes[i + this.CUBES].getPosition();
-         this.meshes[i + this.CUBES].move(-pos.x, -pos.y, -pos.z);
-      }
-   }
 
    this.updateCam = () => {
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
@@ -463,22 +469,22 @@ void main() {
          } else {
             z = 0;
          }
-
-         // let p = evalBezier(time / 20 % 1, BX, BY, BZ);
-         // this.C.setPosition(p[0], p[2] + 0.25, p[1]);
          this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, z * delta, -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
-
+         const POS = this.C.getPosition();
+         POS.x = Math.max(-20, Math.min(20, POS.x));
+         POS.z = Math.max(-19, Math.min(19, POS.z));
+         POS.y = Math.max(0, Math.min(20, POS.y));
+         this.C.setPosition(POS.x, POS.y, POS.z);
          this.updateCam();
-
       }
    }
 
 
    this.reloadShapes = () => {
-      const N = this.SPIRAL ? this.meshes.length : this.CUBES;
+      const N = this.meshes.length;
       for (let i = 0; i < N; i++) {
-         setUniform('1i', 'uClouds', i == 0 ? 1 : 0);
          let mesh = this.meshes[i];
+         setUniform('1i', 'uClouds', (i == 0) ? 1 : 0);
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);
          }

@@ -57,7 +57,7 @@ class Mesh {
     force;
 
     children = [];
-    constructor(M = new Float32Array([])) {
+    constructor(M = new Float32Array([]), triangle_strip = false) {
         this.m = new Matrix(M);
         this.V = M;
         this.T = new Matrix().identity();
@@ -66,6 +66,7 @@ class Mesh {
         this.Q = new Matrix().identity();
         this.B = new Matrix().identity();
         this.mesh = {
+            triangle_strip: triangle_strip,
             data: this.V,
         }
         this.getLengths();
@@ -75,23 +76,36 @@ class Mesh {
         // this.move(-this.C.x, -this.C.y, -this.C.z);
         // this.bake();
         this.move(this.C.x, this.C.y, this.C.z);
-        this.force = {x: 0, y:0, z:0};
-        this.velocity = {x: 0, y:0, z:0};
+        this.force = { x: 0, y: 0, z: 0 };
+        this.velocity = { x: 0, y: 0, z: 0 };
     }
 
-    applyForce(force){
+    duplicate() {
+        const MESH = new Mesh(new Float32Array(this.V), this.mesh.triangle_strip);
+        MESH.T = new Matrix(this.T.m.slice());
+        MESH.R = new Matrix(this.R.m.slice());
+        MESH.S = new Matrix(this.S.m.slice());
+        MESH.B = new Matrix(this.B.m.slice());
+        this.Q = new Matrix(this.Q.m.slice());
+        this.QI = new Matrix(this.QI.m.slice());
+
+        MESH.COLOR = this.COLOR.slice();
+        return MESH;
+    }
+
+    applyForce(force) {
         this.force.x += force.x;
         this.force.y += force.y;
         this.force.z += force.z;
     }
 
-    applyVelocity(vel){
+    applyVelocity(vel) {
         this.velocity.x += vel.x;
         this.velocity.y += vel.y;
         this.velocity.z += vel.z;
     }
 
-    resetForce(){
+    resetForce() {
         this.force.x = 0;
         this.force.y = 0;
         this.force.z = 0;
