@@ -1,5 +1,4 @@
-For this assignment I am giving you the support code to find implicit surfaces, as well as the code for the three example scenes that we went over in class -- a bending leg, four wiggly shapes, and a shape changing red cup.
-
-Since you already know how to create hierarchical skeletons, I would like you to create some sort of animated creature, by using the implicit surface finder to "skin" a collection of "bones". In essence, you will be doing a more elaborate variation of my bending leg example.
-
-If you wish, you can also add procedural textures to make your animated creature more visually interesting.
+For this assignment I am giving you the support code to find implicit surfaces, as well as the code for the three example scenes that we went over in class -- a bending leg,
+four wiggly shapes, and a shape changing red cup. Since you already know how to create hierarchical skeletons, I would like you to create some sort of animated creature, by
+using the implicit surface finder to "skin" a collection of "bones". In essence, you will be doing a more elaborate variation of my bending leg example. If you wish, you can
+also add procedural textures to make your animated creature more visually interesting.
