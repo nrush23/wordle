@@ -57,7 +57,7 @@ class Mesh {
     force;
 
     children = [];
-    constructor(M = new Float32Array([]), triangle_strip = false) {
+    constructor(M = new Float32Array([]), triangle_strip = false, implicit = false) {
         this.m = new Matrix(M);
         this.V = M;
         this.T = new Matrix().identity();
@@ -65,6 +65,8 @@ class Mesh {
         this.S = new Matrix().identity();
         this.Q = new Matrix().identity();
         this.B = new Matrix().identity();
+
+        this.implicit = implicit;
         this.mesh = {
             triangle_strip: triangle_strip,
             data: this.V,
@@ -72,7 +74,9 @@ class Mesh {
         this.getLengths();
         const WORLD_POS = this.getPosition(false);
         this.C = { x: this.getMidpoint(0), y: this.getMidpoint(1), z: this.getMidpoint(2) };
-        this.recenter();
+        if (!implicit) {
+            this.recenter();
+        }
         // this.move(-this.C.x, -this.C.y, -this.C.z);
         // this.bake();
         this.move(this.C.x, this.C.y, this.C.z);

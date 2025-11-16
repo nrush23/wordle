@@ -27,9 +27,6 @@ let mesh = {
    ])
 };
 function gl_start(canvas, scene) {
-   canvas.addEventListener("click", async () => {
-     await canvas.requestPointerLock();
-     });
    setTimeout(function () {
       canvas.gl = canvas.getContext('webgl2');
       canvas.setShaders = function (vertexShader, fragmentShader) {
@@ -59,20 +56,22 @@ function gl_start(canvas, scene) {
          gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
          gl.enable(gl.DEPTH_TEST);
          gl.depthFunc(gl.LEQUAL);
-         let vertexAttribute = (name, size, position) => {
-            let attr = gl.getAttribLocation(gl.program, name);
-            gl.enableVertexAttribArray(attr);
-            gl.vertexAttribPointer(attr, size, gl.FLOAT, false, vertexSize * 4, position * 4);
-         }
 
-         /*
-            Each vertex now has 6 numbers:
-            3 for the position attribute and
-            another 3 for the normal attribute.
-         */
+          vertexMap(['aPos',3,'aNor',3]);
+     //     let vertexAttribute = (name, size, position) => {
+     //        let attr = gl.getAttribLocation(gl.program, name);
+     //        gl.enableVertexAttribArray(attr);
+     //        gl.vertexAttribPointer(attr, size, gl.FLOAT, false, vertexSize * 4, position * 4);
+     //     }
 
-         vertexAttribute('aPos', 3, 0);
-         vertexAttribute('aNor', 3, 3);
+     //     /*
+     //        Each vertex now has 6 numbers:
+     //        3 for the position attribute and
+     //        another 3 for the normal attribute.
+     //     */
+
+     //     vertexAttribute('aPos', 3, 0);
+     //     vertexAttribute('aNor', 3, 3);
       }
       canvas.setShaders(scene.vertexShader, scene.fragmentShader);
       setInterval(function () {
@@ -94,6 +93,23 @@ function gl_start(canvas, scene) {
    }, 100);
 }
 
+let vertexMap = map => {
+   let vertexAttribute = (name, size, position) => {
+      let attr = gl.getAttribLocation(gl.program, name);
+      gl.enableVertexAttribArray(attr);
+      gl.vertexAttribPointer(attr, size, gl.FLOAT, false, vertexSize * 4, position * 4);
+   }
+   vertexSize = 0;
+   for (let n = 0 ; n < map.length ; n += 2)
+      vertexSize += map[n+1];
+   let index = 0;
+   for (let n = 0 ; n < map.length ; n += 2) {
+      vertexAttribute(map[n], map[n+1], index);
+      index += map[n+1];
+   }
+}
+
+
 /*
    The drawMesh() function does two things:
 
@@ -111,11 +127,23 @@ let drawMesh = mesh => {
       0, mesh.data.length / vertexSize);
 }
 
+let drawObj = (mesh, matrix, color) => {
+   autodraw = false;
+   let m = mxm(perspective(0,0,-.5),matrix);
+   setUniform('Matrix4fv', 'uMF', false, m);
+   setUniform('Matrix4fv', 'uMI', false, inverse(m));
+   setUniform('4fv', 'uC', color ?? [1,1,1,1]);
+   drawMesh(mesh);
+}
+
 let gl;
 let setUniform = (type, name, a, b, c) => (gl['uniform' + type])(gl.getUniformLocation(gl.program, name), a, b, c);
 
 // THIS IS A SIMPLE IMPLEMENTATION OF THE OPERATIONS NEEDED FOR MATRIX MANIPULATION.
 
+// Shared global object.
+
+let _ = {};
 
 // SOME USEFUL FUNCTIONS
 
@@ -153,6 +181,17 @@ let mxm = (a,b) => {
    return m;
 }
 
+// A matrix transforms a point
+
+let transform = (m,p) => {
+   let x = p[0], y = p[1], z = p[2], w = p[3] ?? 1;
+   return [
+      m[0] * x + m[4] * y + m[ 8] * z + m[12] * w,
+      m[1] * x + m[5] * y + m[ 9] * z + m[13] * w,
+      m[2] * x + m[6] * y + m[10] * z + m[14] * w,
+      m[3] * x + m[7] * y + m[11] * z + m[15] * w,
+   ];
+}
 // Invert a matrix.
 
 let inverse = src => {
@@ -330,7 +369,23 @@ void main() {
    fragColor = vec4(c * uColor, 1.);
 }`,
 
+shinyFragmentShader : `\
+#version 300 es
+precision highp float;
+in  vec3 vPos, vNor;
+out vec4 fragColor;
+uniform vec3 uColor;
+
+void main() {
+   vec3 L = vec3(.577), N = normalize(vNor);
+   float d = dot(L,N), r = 2. * dot(L,N) * N.z - L.z;
+   fragColor = vec4(uColor*(.1+max(0.,d)+max(0.,-d)*.5)
+                    + pow(max(0., r),20.)
+		    + pow(max(0.,-r),20.)*.5, 1.);
+}`,
+
 };
+
 
 // // RESPOND TO THE USER'S MOUSE INPUT
 

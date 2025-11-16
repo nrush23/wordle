@@ -28,6 +28,8 @@ function Scene() {
       }
    `;
 
+   let prev = Date.now()/1000;
+
    this.fragmentShader = Shader.defaultFragmentShader;
 
    let blobs = new Blobs();
@@ -36,21 +38,28 @@ function Scene() {
    let m2 = mxm(move(-.01, .00,0),scale(.08,.05,.05));
    let m3 = mxm(move( .14,-.05,0),scale(.20,.06,.06));
 
-   blobs.addBlob(blobs.SPHERE, m1, .5);
-   blobs.addBlob(blobs.SPHERE, m2, .5);
-   blobs.addBlob(blobs.SPHERE, m3, .5);
+   blobs.addBlob(blobs.CUBE, m1, 0.6);
+   blobs.addBlob(blobs.CUBE, m2, 0.6);
+   blobs.addBlob(blobs.CUBE, m3, 0.6);
 
    let mesh = { data: implicitSurfaceTriangleMesh(blobs, 150) };
 
    let M = new Matrix();
+   let pos = -1;
 
    this.update = () => {
       let time = Date.now() / 1000;
       let A, B, C;
       let bend = c(time) * .5 - .5;
-
+      let delta = time - prev;
+      prev = time;
+      pos += delta * 0.5;
+      if (pos > 1){
+         pos = -1;
+      }
       M.push();
          M.move(-.2-.2*bend,.55-.2*bend,0);
+         M.move(pos,0,0);
          M.turnZ(-Math.PI/2 - bend);
          M.move(.3,0,0);
          A = M.get();

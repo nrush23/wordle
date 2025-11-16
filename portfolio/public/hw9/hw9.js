@@ -7,6 +7,11 @@ function Scene(canvas) {
    this.pitch = 0;
    this.PREV_CX = null;
    this.PREV_CY = null;
+
+   const COL = 1;
+   const ROW = 5;
+   const MAIN = Math.floor(ROW / 2);
+
    let evalBezier = (t, BX, BY, BZ, getF = false) => {
       let nk = (BX.length - 1) / 3;
 
@@ -27,6 +32,29 @@ function Scene(canvas) {
          return [C(BX.slice(3 * n), f), C(BY.slice(3 * n), f), C(BZ.slice(3 * n), f), f];
       }
       return [C(BX.slice(3 * n), f), C(BY.slice(3 * n), f), C(BZ.slice(3 * n), f)];
+   }
+
+   function getPoint(col, row) {
+      return [0.5 - .45 + .3 * col, -.5 + .3 * row, 0];
+   }
+   function makeBird() {
+
+      let blobs = new Blobs();
+
+      for (let row = 0; row < ROW; row++) {
+         for (let col = 0; col < COL; col++) {
+            blobs.addBlob(blobs.SAUSAGE,
+               mxm(move(getPoint(col, row)),
+                  mxm(turnX(Math.PI / 2), row != MAIN ? scale(.05, .05, .178) : scale(0.2, 0.2, 0.2))), 1);
+         }
+      }
+      let M = implicitSurfaceTriangleMesh(blobs, 150);
+      let mesh = new Mesh(M);
+      let mat = [];
+      for (let n = 0; n < MAIN; n++) {
+         mat.push(identity());
+      }
+      return { mesh: mesh, mat: mat };
    }
 
    let createPathsMesh = (width, paths) => {
@@ -147,18 +175,20 @@ function Scene(canvas) {
    CART.scale(0.025, 0.02, 0.3);
    CART.move(0, -0.04, -0.5);
    CART.COLOR = rgb(153, 76, 0, 1);
-
+   this.SKYBOX = -1;
    function createWorld() {
       let background = new Cube();
       background.scale(50, 50, 50);
       background.COLOR = rgb(0, 0, 0, 1);
+      this.SKYBOX = 0;
       return background;
    }
 
 
    this.canvas = canvas;
 
-   this.meshes = [createWorld()];
+   // this.meshes = [createWorld()];
+   this.meshes = [];
 
    const MESH = SIERPINSKI(8, [[-1, -1, 1], [1, -1, 1], [0, 1, 1], [-1, -1, 1]]);
    MESH.move(0, 10.25, 0);
@@ -224,11 +254,27 @@ function Scene(canvas) {
 
    this.vertexShader = `\
 #version 300 es
-uniform mat4 uMF, uMI, uMP, uMV;
-in  vec3 aPos, aNor;
+uniform mat4 uMF, uMI, uMP, uMV, uMat[20];
+uniform bool uWeighted;
+in  vec3 aPos, aNor, aWts0, aWts1;
 out vec3 vPos, vNor;
 void main() {
-   vec4 pos = uMF * vec4(aPos, 1.);
+   // vec4 pos = uMF * vec4(aPos, 1.);
+   // vec4 p = vec4(0.0);
+   vec4 p = vec4(aPos, 1.0);
+   vec4 pos = p;
+   // vec4 pos = uMF * p;
+   if (uWeighted){
+      for (int i = 0 ; i < 20 ; i++) {
+         if (i == int(aWts0.x)) pos += mod(aWts0.x, 1.) * (uMat[i] * p);
+         if (i == int(aWts0.y)) pos += mod(aWts0.y, 1.) * (uMat[i] * p);
+         if (i == int(aWts0.z)) pos += mod(aWts0.z, 1.) * (uMat[i] * p);
+         if (i == int(aWts1.x)) pos += mod(aWts1.x, 1.) * (uMat[i] * p);
+         if (i == int(aWts1.y)) pos += mod(aWts1.y, 1.) * (uMat[i] * p);
+         if (i == int(aWts1.z)) pos += mod(aWts1.z, 1.) * (uMat[i] * p);
+      }
+   }
+   pos = uMF * pos;
    vec4 nor = vec4(aNor, 0.) * uMI;
    gl_Position = uMP * uMV * pos;
    vPos = pos.xyz;
@@ -343,6 +389,8 @@ void main() {
    }
 
    this.initialize = async () => {
+
+      setUniform('1i', 'uWeighted', 0);
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
       setUniform('Matrix4fv', 'uMP', false, P.m);
 
@@ -354,8 +402,14 @@ void main() {
       // this.CENTER.setParent(this.C);
       CART.setParent(this.C);
 
-      this.C.move(0, 0, 3);
+      this.C.move(-0.5, 0, 1.5);
+      this.C.turnY(5*Math.PI/2);
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
+
+      this.BIRD = makeBird().mesh;
+      this.BIRD.turnZ(Math.PI / 2);
+      this.BIRD.move(0, 0.5, 0);
+      this.BIRD.turnY(Math.PI/2);
    }
 
    this.events = [['keyup', (evt) => {
@@ -417,6 +471,70 @@ void main() {
       await this.canvas.requestPointerLock();
    }]];
 
+   this.moveBird = (time) => {
+      const BIRD_POS = this.BIRD.getPosition(false);
+      const CAM_POS = this.C.getPosition(false);
+      let diff = { x: CAM_POS.x - BIRD_POS.x, y: CAM_POS.y - BIRD_POS.y, z: CAM_POS.z - BIRD_POS.z };
+      const mag = diff.x ** 2 + diff.z ** 2;
+
+      if (mag > 0.01) {
+         const V = { x: 2.0, y: 0.0, z: 2.0 };
+         const delta = time - prev;
+         let x = 0;
+         let z = 0;
+         if (diff.x < 0) {
+            x = -1;
+         } else if (diff.x > 0) {
+            x = 1;
+         }
+
+         if (diff.z < 0) {
+            z = -1;
+         } else if (diff.z > 0) {
+            z = 1;
+         }
+
+         if (x != 0 && z != 0) {
+            x /= 2;
+            z /= 2;
+         }
+         this.BIRD.move(x * V.x * delta, 0, z * V.z * delta);
+      }
+   }
+
+   this.test = (time) => {
+      // this.moveBird(time);
+      const R = 0.03;
+      let mat = [];
+      for (let row = 0; row < ROW; row++)
+         for (let col = 0; col < COL; col++) {
+            let p = getPoint(col, row), np = resize(p, -1);
+            let dist = Math.abs(MAIN - row);
+            let disp = R * Math.sin(time);
+            if (row != MAIN) {
+               disp *= 3* dist;
+            }
+            mat.push(mxm(
+               move(p),
+               mxm(move(disp, 0, 0),
+                  move(np))
+            ));
+         }
+
+      let M = this.BIRD.getWorldMatrix();
+
+      vertexMap(['aPos', 3, 'aNor', 3, 'aWts0', 3, 'aWts1', 3]);
+      setUniform('Matrix4fv', 'uMF', false, M);
+      setUniform('Matrix4fv', 'uMI', false, inverse(M));
+      setUniform('4fv', 'uC', rgb(0, 255, 0, 1));
+      setUniform('1i', 'uWeighted', 1);
+      setUniform('Matrix4fv', 'uMat', false, mat.flat());
+      drawMesh(this.BIRD.mesh);
+
+      // setUniform('1i', 'uWeighted', 1);
+      // drawObj(BLM.mesh, mxm(turnZ(Math.PI / 2), scale(1, 1, 1)), rgb(0, 255, 0, 1));
+   }
+
    this.update = () => {
       let time = Date.now() / 1000;
       this.updateMovement(time);
@@ -428,11 +546,16 @@ void main() {
       this.GROUND.COLOR = COLOR;
       setUniform('1f', 'uTime', time - startTime);
       this.reloadShapes();
+      if (this.BIRD) {
+         this.test(time);
+      }
       prev = time;
    }
 
 
+
    this.updateCam = () => {
+      console.log(this.C.getPosition(false));
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
    }
 
@@ -482,9 +605,11 @@ void main() {
 
    this.reloadShapes = () => {
       const N = this.meshes.length;
+      setUniform('1i', 'uWeighted', 0);
+      vertexMap(['aPos', 3, 'aNor', 3]);
       for (let i = 0; i < N; i++) {
          let mesh = this.meshes[i];
-         setUniform('1i', 'uClouds', (i == 0) ? 1 : 0);
+         setUniform('1i', 'uClouds', (i == this.SKYBOX) ? 1 : 0);
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);
          }
@@ -498,4 +623,4 @@ void main() {
 
 }
 
-console.log("hw8.js loaded");
+console.log("hw9.js loaded");
