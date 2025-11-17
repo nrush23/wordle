@@ -1,5 +1,5 @@
 let Parser = {
-    async importMesh(path_src, file_name) {
+    async importMesh(path_src, file_name, uv_map=false) {
         //Get the text stream
         const stream = await fetch(this.prefix + path_src + file_name).then(res => res.text());
         const SPACE = ' ';
@@ -17,7 +17,7 @@ let Parser = {
         //Vertices range Line 16 (15) until Line 16 + V - 1 (16 + V - 2)
         let VERTICES = new Array(V);
         for (let i = 15; i < 15 + V; i++) {
-            let point = lines[i].split(SPACE).slice(0, 6);
+            let point = lines[i].split(SPACE).slice(0, uv_map? 8:6);
             VERTICES[i - 15] = Float32Array.from(point, parseFloat);
         }
 

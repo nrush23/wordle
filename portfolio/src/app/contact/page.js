@@ -10,7 +10,7 @@ export default function Contacts() {
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <Image
           className="rounded-lg"
-          src={`${prefix}/id.jpg`}
+          src={`${prefix}/assets/id.jpg`}
           alt="Naria Rush"
           width={180}
           height={38}
