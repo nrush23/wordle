@@ -93,7 +93,7 @@ function Scene(canvas) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['room2', 'floor', 'bench_only2'];
+      const FILES = ['room2', 'floor', 'furniture_alpha8'];
       // const FILE = "room.ply";
       const PATH = "/hw10/models/";
       let MESHES = [];
@@ -103,24 +103,7 @@ function Scene(canvas) {
          addTexture(i, '/hw10/textures/', FILES[i] + '.png');
          MESHES.push(new Mesh(data, false, false, 8, i));
       }
-
-      // let data = await Parser.importMesh(PATH, FILE, true);
-      // let M = new Mesh(data, false, false, 8, 0);
-      // M.COLOR = rgb(255, 255, 255, 1);
-      // M.COLOR = rgb(-255, -255, -255, -1);
-
-      // addTexture(0, '/hw10/textures/', 'wallpaper.png');
-
-      // data = await Parser.importMesh(PATH, 'floor.ply', true);
-      // let M2 = new Mesh(data, false, false, 8, 2);
-      // addTexture(2, '/hw10/textures/', 'wood_floor.png');
-
-      // data = await Parser.importMesh(PATH, 'floor.ply', true);
-      // let M2 = new Mesh(data, false, false, 8, 2);
-      // addTexture(2, '/hw10/textures/', 'wood_floor.png');
-
-
-      // return [M, M2];
+      
       return MESHES;
    };
 
