@@ -93,28 +93,47 @@ function Scene(canvas) {
    }
 
    let makeRoom = async () => {
-      const FILE = "hw10_v3.ply";
+      const FILES = ['room2', 'floor', 'bench_only2'];
+      // const FILE = "room.ply";
       const PATH = "/hw10/models/";
+      let MESHES = [];
 
-      let data = await Parser.importMesh(PATH, FILE, true);
-      let M = new Mesh(data, false, false, 8, 0);
+      for (let i = 0; i < FILES.length; i++){
+         let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
+         addTexture(i, '/hw10/textures/', FILES[i] + '.png');
+         MESHES.push(new Mesh(data, false, false, 8, i));
+      }
+
+      // let data = await Parser.importMesh(PATH, FILE, true);
+      // let M = new Mesh(data, false, false, 8, 0);
       // M.COLOR = rgb(255, 255, 255, 1);
       // M.COLOR = rgb(-255, -255, -255, -1);
 
-      addTexture(0, '/hw10/textures/', 'brick.png');
-      return M;
+      // addTexture(0, '/hw10/textures/', 'wallpaper.png');
+
+      // data = await Parser.importMesh(PATH, 'floor.ply', true);
+      // let M2 = new Mesh(data, false, false, 8, 2);
+      // addTexture(2, '/hw10/textures/', 'wood_floor.png');
+
+      // data = await Parser.importMesh(PATH, 'floor.ply', true);
+      // let M2 = new Mesh(data, false, false, 8, 2);
+      // addTexture(2, '/hw10/textures/', 'wood_floor.png');
+
+
+      // return [M, M2];
+      return MESHES;
    };
 
    let makeDurg = async () => {
       const FILE = "durg.ply";
-      const PATH =  "/hw10/models/";
+      const PATH = "/hw10/models/";
 
       let data = await Parser.importMesh(PATH, FILE, true);
 
-      let M = new Mesh(data, false, false, 8, 1);
+      let M = new Mesh(data, false, false, 8, 3);
       // M.COLOR = rgb(-255, -255, -255, -1);
 
-      addTexture(1, '/hw10/textures/', 'skin1.png');
+      addTexture(3, '/hw10/textures/', 'skin1.png');
 
       return M;
    }
@@ -181,7 +200,7 @@ precision highp float;
 uniform vec4 uC;
 uniform float uTime;
 uniform int uID;
-uniform sampler2D uSampler[2]; //U, V SAMPLER
+uniform sampler2D uSampler[4]; //U, V SAMPLER
 in  vec3 vPos, vNor;
 in vec2 vUV;
 
@@ -199,8 +218,12 @@ void main() {
       vec4 T;
       if (uID == 0){
        T = texture(uSampler[0], vUV);
-      }else{
+      }else if (uID == 1){
          T = texture(uSampler[1], vUV);
+      }else if (uID == 2){
+         T = texture(uSampler[2], vUV);
+      }else{
+         T = texture(uSampler[3], vUV);
       }
       fragColor = vec4(sqrt(c_s)*T.rgb, 1.);
    }else{
@@ -218,21 +241,26 @@ void main() {
       return new Matrix([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (near + far) * rangeInv, -1, 0, 0, near * far * rangeInv * 2, 0]);
    }
 
-
-
    this.initialize = async () => {
       vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
-      
-      setUniform('1iv', 'uSampler', [0,1]);
+
+      setUniform('1iv', 'uSampler', [0, 1, 2, 3]);
       let ROOM = await makeRoom();
       // let data = await Parser.importMesh("/hw10/models/", "cube2.ply", true);
       // console.log(data);
-      this.meshes.push(ROOM);
+      ROOM.forEach(mesh => {
+         this.meshes.push(mesh);
+      })
+      // this.meshes.push(ROOM);
 
       let DURG = await makeDurg();
 
-      DURG.move(0,1,0);
+      DURG.move(0, 1, 0);
       this.meshes.push(DURG);
+
+      DURG.animate = (time) => {
+         DURG.setPosition(Math.cos(time), 1, Math.sin(time));
+      }
 
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
       setUniform('Matrix4fv', 'uMP', false, P.m);
@@ -245,6 +273,8 @@ void main() {
 
       this.C.move(0, 2, 3);
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
+
+      // this.meshes = this.meshes.flat();
    }
 
    this.events = [['keyup', (evt) => {
@@ -376,7 +406,7 @@ void main() {
          setUniform('Matrix4fv', 'uMF', false, M);
          setUniform('Matrix4fv', 'uMI', false, inverse(M));
          setUniform('4fv', 'uC', mesh.COLOR);
-         if(mesh.textID != -1){
+         if (mesh.textID != -1) {
             setUniform('1i', 'uID', mesh.textID);
          }
          drawMesh(mesh.mesh);
