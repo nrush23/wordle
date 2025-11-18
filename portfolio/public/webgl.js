@@ -774,13 +774,13 @@ let addTexture = (index, folder, src) => {
 
       gl.texParameteri(gl.TEXTURE_2D,
                        gl.TEXTURE_MAG_FILTER,
-                       gl.LINEAR_MIPMAP_NEAREST);
+                       gl.LINEAR);
 
       // SPECIFY HOW IT'S FILTERED WHEN VERY SMALL
 
       gl.texParameteri(gl.TEXTURE_2D,
                        gl.TEXTURE_MIN_FILTER,
-                       gl.LINEAR_MIPMAP_NEAREST);
+                       gl.LINEAR);
 
       // GENERATE THE MIP MAP PYRAMID
 

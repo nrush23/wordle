@@ -93,23 +93,37 @@ function Scene(canvas) {
    }
 
    let makeRoom = async () => {
-      const FILE = "hw10_v2.ply";
+      const FILE = "hw10_v3.ply";
       const PATH = "/hw10/models/";
 
-      MESHES = [];
+      let data = await Parser.importMesh(PATH, FILE, true);
+      let M = new Mesh(data, false, false, 8, 0);
+      // M.COLOR = rgb(255, 255, 255, 1);
+      // M.COLOR = rgb(-255, -255, -255, -1);
 
-      let data = await Parser.importMesh(PATH, FILE);
-      let M = new Mesh(data);
-      M.COLOR = rgb(255,255,255,1);
-
-      addTexture(0, 'hw10/10/textures/', 'brick.png');
+      addTexture(0, '/hw10/textures/', 'brick.png');
       return M;
    };
+
+   let makeDurg = async () => {
+      const FILE = "durg.ply";
+      const PATH =  "/hw10/models/";
+
+      let data = await Parser.importMesh(PATH, FILE, true);
+
+      let M = new Mesh(data, false, false, 8, 1);
+      // M.COLOR = rgb(-255, -255, -255, -1);
+
+      addTexture(1, '/hw10/textures/', 'skin1.png');
+
+      return M;
+   }
 
 
    this.canvas = canvas;
 
-   this.meshes = [createWorld()];
+   // this.meshes = [createWorld()];
+   this.meshes = [];
 
    function createGround() {
       let GROUND = new Cube();
@@ -124,7 +138,7 @@ function Scene(canvas) {
       LEFT_ARM.scale(0.01, 0.01, 0.1);
       LEFT_ARM.applyAll();
       LEFT_ARM.move(-3, -5.2, -1.8);
-      LEFT_ARM.COLOR = rgb(200, 0, 0, 1);
+      LEFT_ARM.COLOR = rgb(255, 0, 0, 1);
 
       let RIGHT_ARM = new Cube(true);
       RIGHT_ARM.scale(0.01, 0.01, 0.1);
@@ -136,9 +150,10 @@ function Scene(canvas) {
 
 
    this.GROUND = createGround();
-   this.meshes = this.meshes.concat(this.GROUND);
+   // this.meshes = this.meshes.concat(this.GROUND);
    const ARMS = createArms();
-   this.meshes = this.meshes.concat(ARMS);
+   this.meshes.push(ARMS);
+   this.meshes = this.meshes.flat();
 
    this.P = new Matrix()
 
@@ -147,13 +162,17 @@ function Scene(canvas) {
 uniform mat4 uMF, uMI, uMP, uMV;
 uniform bool uUV;
 in  vec3 aPos, aNor;
+in vec2 aUV;
+
 out vec3 vPos, vNor;
+out vec2 vUV;
 void main() {
    vec4 pos = uMF * vec4(aPos, 1.);
    vec4 nor = vec4(aNor, 0.) * uMI;
    gl_Position = uMP * uMV * pos;
    vPos = pos.xyz;
    vNor = nor.xyz;
+   vUV = aUV;
 }`;
 
    this.fragmentShader = `\
@@ -161,94 +180,30 @@ void main() {
 precision highp float;
 uniform vec4 uC;
 uniform float uTime;
-uniform bool uClouds;
+uniform int uID;
+uniform sampler2D uSampler[2]; //U, V SAMPLER
 in  vec3 vPos, vNor;
+in vec2 vUV;
+
 out vec4 fragColor;
 
-float turbulence(vec3 P){
-   float f = 0.0, s = 1.0;
-   for(int i = 0 ; i < 8; i++){
-      float t = noise(s*P);
-      f += abs(t) / s;
-      s *= 2.0;
-      P = vec3(0.866*P.x + 0.5*P.z, P.y + 100.0, -0.5*P.x + 0.866*P.z);
-   }
-   return f;
-}
-
-vec4 cubeTexture(vec3 P, vec4 C){
-   float a = .5;
-   float b = .52;
-   float s = 0.;
-   float r0 = length(P.xy);
-   float t = mod(uTime, 1.);
-      
-   float u0 = turbulence(vec3(P.x*(2.-t)/2., P.y*(2.-t)/2., .2* t    +2.));
-      
-   float u1 = turbulence(vec3(P.x*(2.-t)   , P.y*(2.-t)   , .2*(t-1.)+2.));
-      
-   float r = min(1., r0 - .1 + 0.3 * mix(u0, u1, t));
-      
-   s = (1. - r) / (1. - b);
-      
-   t = max(0.,min(1., (r0 - a) / (b - a)));
-
-   r = .9 + .1 * noise(13.*P+vec3(0.,0.,uTime));
-   vec4 f0 = vec4(2.*r,r,(r*r+r)/2.,1.);
-
-   vec3 color = vec3(s);
-   float ss = s * s;
-   color = ss*vec3(1.0,ss*ss,ss*ss*ss);
-   vec4 f1 = vec4(color, ss) * C;
-
-   return f1 * C;
-}
-
-vec3 wood(vec3 P, vec3 C){
-   P.y += .5 * turbulence(P);
-   vec3 c = C *
-            mix(2.5, .1,
-	        .5 + .25 * turbulence(vec3(.5,40.,40.) * P+2.*sin(P))
-                   + .25 * turbulence(vec3(40.,40.,.5) * P+2.*sin(P)));
-   c *= .3 + .7 * pow(abs(sin(10. * P.y)), .2);
-   return c;
-}
-
-vec3 cubeTexture2(vec3 P, vec4 C){
-   float v = turbulence(1.5 * P * uTime);
-   float s = sqrt(.5 + .5 * cos(1. * P.x + 8. * v));
-   // return vec3(.8,0.0,.0) * vec3(s,s*s,s*s*s);
-   float b = mix(0.8, 1.0, s);
-   return mix(vec3(0.3,0.0,0.0), C.rgb, b);
-}
-
-vec3 marble(vec3 P) {
-   float v = turbulence(1.5 * P);
-   float s = sqrt(1.0 + 1.0 * sin(20. * P.x + 8. * v *uTime));
-   return vec3(1.0,1.0,1.0) * vec3(s,s*s,s*s*s);
-}
-
-vec3 ground(vec3 P){
-   P = P + vec3(sin(uTime), noise(P), cos(uTime));
-   float v = turbulence(1.5 * P);
-   float s = sqrt(1.0 + cos(1. * P.x + 8. * v * noise(P)*uTime));
-   return vec3(1.0,1.,1.0) * vec3(s,s*s,s*s*s);
-}
 
 void main() {
    //First color the background
-   float t = 0.02 * vPos.y;
-   if (t > .5)
-      t -= .3 * turbulence(vPos + vec3(uTime,0.,.1*uTime));
-   vec3 c = vec3(0.,0.,0.);
-   c = mix(c, vec3(0.1,0.,0.0), min(t,.5));
-   if (t > 0.65)
-      c = mix(c, vec3(.2,0.,0.0), (t-.65) / (.7 - .65));
-   fragColor = vec4(sqrt(c), 1.);
-   if (!uClouds){
-      vec3 nor = normalize(vNor);
-      vec3 L = vec3(2.0,1.0,2.0);
-      float c_s = .5 + max(0., dot(normalize(L),nor));
+   vec3 nor = normalize(vNor);
+   vec3 L = vec3(0.0,0.5,0.0);
+   float c_s = 0.5 + max(0., dot(normalize(L),nor));
+
+   //No color means use texture
+   if (uC == vec4(-1.0)){
+      vec4 T;
+      if (uID == 0){
+       T = texture(uSampler[0], vUV);
+      }else{
+         T = texture(uSampler[1], vUV);
+      }
+      fragColor = vec4(sqrt(c_s)*T.rgb, 1.);
+   }else{
       fragColor = uC * vec4(c_s,c_s,c_s, uC.a);
    }
 }`;
@@ -263,13 +218,22 @@ void main() {
       return new Matrix([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (near + far) * rangeInv, -1, 0, 0, near * far * rangeInv * 2, 0]);
    }
 
-   this.initialize = async () => {
-      let ROOM = await makeRoom();
-      let data = await Parser.importMesh("/hw10/models/", "cube.ply", true);
-      console.log(data);
 
+
+   this.initialize = async () => {
+      vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
       
+      setUniform('1iv', 'uSampler', [0,1]);
+      let ROOM = await makeRoom();
+      // let data = await Parser.importMesh("/hw10/models/", "cube2.ply", true);
+      // console.log(data);
       this.meshes.push(ROOM);
+
+      let DURG = await makeDurg();
+
+      DURG.move(0,1,0);
+      this.meshes.push(DURG);
+
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
       setUniform('Matrix4fv', 'uMP', false, P.m);
 
@@ -405,7 +369,6 @@ void main() {
       const N = this.meshes.length;
       for (let i = 0; i < N; i++) {
          let mesh = this.meshes[i];
-         setUniform('1i', 'uClouds', (i == 0) ? 1 : 0);
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);
          }
@@ -413,6 +376,9 @@ void main() {
          setUniform('Matrix4fv', 'uMF', false, M);
          setUniform('Matrix4fv', 'uMI', false, inverse(M));
          setUniform('4fv', 'uC', mesh.COLOR);
+         if(mesh.textID != -1){
+            setUniform('1i', 'uID', mesh.textID);
+         }
          drawMesh(mesh.mesh);
       }
    }
