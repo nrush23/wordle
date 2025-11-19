@@ -2,9 +2,15 @@
  * @param {*} canvas 
  */
 
+//UV OFFSETS FROM BLENDER:
+//Y: 0.2
+//X: 0.12
 function Scene(canvas) {
    this.yaw = 0;
    this.pitch = 0;
+
+   this.XOFF = 0;
+   this.YOFF = 0;
    let evalBezier = (t, BX, BY, BZ, getF = false) => {
       let nk = (BX.length - 1) / 3;
 
@@ -93,17 +99,17 @@ function Scene(canvas) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['room2', 'floor', 'furniture_alpha8'];
+      const FILES = ['room2', 'floor', 'furniture_alpha8', 'projector'];
       // const FILE = "room.ply";
       const PATH = "/hw10/models/";
       let MESHES = [];
 
-      for (let i = 0; i < FILES.length; i++){
+      for (let i = 0; i < FILES.length; i++) {
          let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
          addTexture(i, '/hw10/textures/', FILES[i] + '.png');
          MESHES.push(new Mesh(data, false, false, 8, i));
       }
-      
+
       return MESHES;
    };
 
@@ -113,10 +119,10 @@ function Scene(canvas) {
 
       let data = await Parser.importMesh(PATH, FILE, true);
 
-      let M = new Mesh(data, false, false, 8, 3);
+      let M = new Mesh(data, false, false, 8, 4);
       // M.COLOR = rgb(-255, -255, -255, -1);
 
-      addTexture(3, '/hw10/textures/', 'skin1.png');
+      addTexture(4, '/hw10/textures/', 'skin1.png');
 
       return M;
    }
@@ -140,19 +146,18 @@ function Scene(canvas) {
       LEFT_ARM.scale(0.01, 0.01, 0.1);
       LEFT_ARM.applyAll();
       LEFT_ARM.move(-3, -5.2, -1.8);
-      LEFT_ARM.COLOR = rgb(255, 0, 0, 1);
+      LEFT_ARM.COLOR = rgb(255, 255, 0, 1);
 
       let RIGHT_ARM = new Cube(true);
       RIGHT_ARM.scale(0.01, 0.01, 0.1);
       RIGHT_ARM.applyAll();
       RIGHT_ARM.move(3, -5.2, -1.8);
-      RIGHT_ARM.COLOR = rgb(255, 0, 0, 1);
+      RIGHT_ARM.COLOR = rgb(255, 255, 0, 1);
       return [LEFT_ARM, RIGHT_ARM];
    }
 
 
    this.GROUND = createGround();
-   // this.meshes = this.meshes.concat(this.GROUND);
    const ARMS = createArms();
    this.meshes.push(ARMS);
    this.meshes = this.meshes.flat();
@@ -183,7 +188,8 @@ precision highp float;
 uniform vec4 uC;
 uniform float uTime;
 uniform int uID;
-uniform sampler2D uSampler[4]; //U, V SAMPLER
+uniform vec2 uOff;
+uniform sampler2D uSampler[5]; //U, V SAMPLER
 in  vec3 vPos, vNor;
 in vec2 vUV;
 
@@ -205,8 +211,10 @@ void main() {
          T = texture(uSampler[1], vUV);
       }else if (uID == 2){
          T = texture(uSampler[2], vUV);
+      }else if (uID == 3){
+         T = texture(uSampler[3], vUV + uOff);
       }else{
-         T = texture(uSampler[3], vUV);
+         T = texture(uSampler[4], vUV);
       }
       fragColor = vec4(sqrt(c_s)*T.rgb, 1.);
    }else{
@@ -227,14 +235,19 @@ void main() {
    this.initialize = async () => {
       vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
 
-      setUniform('1iv', 'uSampler', [0, 1, 2, 3]);
+      setUniform('1iv', 'uSampler', [0, 1, 2, 3, 4]);
+      setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
       let ROOM = await makeRoom();
-      // let data = await Parser.importMesh("/hw10/models/", "cube2.ply", true);
-      // console.log(data);
       ROOM.forEach(mesh => {
          this.meshes.push(mesh);
       })
-      // this.meshes.push(ROOM);
+
+      setInterval(() => {
+         this.XOFF = (this.XOFF + .12) % (0.12 * 7);
+         this.YOFF = (this.YOFF + 0.2) % (0.6);
+         setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
+      }, 500);
+
 
       let DURG = await makeDurg();
 
