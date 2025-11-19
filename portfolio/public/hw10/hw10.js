@@ -5,12 +5,19 @@
 //UV OFFSETS FROM BLENDER:
 //Y: 0.2
 //X: 0.12
+
+const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.36], [4.46, 6.68], [-0.14, 0.03], [-2.55, 7.25], [-4.44, 1.53], [-4.3, -4.77]];
+// const DOOR_WAY = [-0.14, 0.03];
 function Scene(canvas) {
    this.yaw = 0;
    this.pitch = 0;
 
+   //Offsets to calculate our positions into the UV mapping of the sprite sheet
+   //N is how many frames we have
    this.XOFF = 0;
    this.YOFF = 0;
+   const N = 20;
+   this.N = 0;
    let evalBezier = (t, BX, BY, BZ, getF = false) => {
       let nk = (BX.length - 1) / 3;
 
@@ -98,9 +105,12 @@ function Scene(canvas) {
       return background;
    }
 
+   let getLOI = () => {
+      return Math.floor(Math.random() * LOI.length);
+   }
+
    let makeRoom = async () => {
-      const FILES = ['room2', 'floor', 'furniture_alpha8', 'projector'];
-      // const FILE = "room.ply";
+      const FILES = ['room2', 'floor', 'furniture_alpha10', 'projector'];
       const PATH = "/hw10/models/";
       let MESHES = [];
 
@@ -120,9 +130,51 @@ function Scene(canvas) {
       let data = await Parser.importMesh(PATH, FILE, true);
 
       let M = new Mesh(data, false, false, 8, 4);
-      // M.COLOR = rgb(-255, -255, -255, -1);
 
       addTexture(4, '/hw10/textures/', 'skin1.png');
+
+
+      M.move(0, 1, 0);
+
+      M.goal = []
+      M.goal.push(getLOI());
+      M.waiting = false;
+
+      M.animate = (time) => {
+
+         const curr = M.getPosition(false);
+         const goal = LOI[M.goal[0]];
+         const direction = { x: goal[0] - curr.x, z: goal[1] - curr.z };
+         const magnitude = Math.sqrt(direction.x ** 2 + direction.z ** 2);
+         if (magnitude > 0.3) {
+            let delta = time - prev;
+            const V = { x: 1, y: 1, z: 1 };
+            let x = V.x * delta;
+            let y = V.y * delta;
+
+
+            if (direction.x < 0) {
+               x *= -1;
+            }
+            if (direction.z < 0) {
+               y *= -1;
+            }
+            M.clearRotation();
+            M.turnY(Math.atan2(direction.x / magnitude, -direction.z / magnitude));
+            M.move(x, 0, y);
+         } else if (!M.waiting) {
+            M.waiting = true;
+            const index = Math.floor(Math.random() * LOI.length);
+            setTimeout(() => {
+               if ((M.goal[0] < 6 && index > 6) || M.goal[0] > 6 && index < 6) {
+                  M.goal.push(6); //Index of the doorway
+               }
+               M.goal.shift();
+               M.waiting = false;
+               M.goal.push(index);
+            }, 2000);
+         }
+      }
 
       return M;
    }
@@ -130,7 +182,6 @@ function Scene(canvas) {
 
    this.canvas = canvas;
 
-   // this.meshes = [createWorld()];
    this.meshes = [];
 
    function createGround() {
@@ -243,20 +294,24 @@ void main() {
       })
 
       setInterval(() => {
-         this.XOFF = (this.XOFF + .12) % (0.12 * 7);
-         this.YOFF = (this.YOFF + 0.2) % (0.6);
+         this.N++;
+         if (this.N > N) {
+            this.N = 0;
+         }
+         const row = Math.floor(this.N / 7);
+         const col = this.N % 7;
+         this.XOFF = col * 0.25;
+         this.YOFF = row * -.23;
          setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
       }, 500);
 
 
       let DURG = await makeDurg();
+      let DURG2 = await makeDurg();
 
-      DURG.move(0, 1, 0);
       this.meshes.push(DURG);
+      this.meshes.push(DURG2);
 
-      DURG.animate = (time) => {
-         DURG.setPosition(Math.cos(time), 1, Math.sin(time));
-      }
 
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
       setUniform('Matrix4fv', 'uMP', false, P.m);
@@ -270,7 +325,6 @@ void main() {
       this.C.move(0, 2, 3);
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
 
-      // this.meshes = this.meshes.flat();
    }
 
    this.events = [['keyup', (evt) => {
@@ -288,6 +342,7 @@ void main() {
       if (evt.key === ' ' || evt.key === 'Shift') {
          this.RISE = 'NONE';
       }
+
    }, false], ['keydown', (evt) => {
 
       //If moving left or right, move by delta
