@@ -8,7 +8,8 @@
 
 const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.36], [4.46, 6.68], [-0.14, 0.03], [-2.55, 7.25], [-4.44, 1.53], [-4.3, -4.77]];
 
-// const prefix = Parser.prefix;
+const X_MAX = 38.75;
+const Z_MAX = 38.75;
 
 function Scene(canvas, prefix) {
    this.yaw = 0;
@@ -112,14 +113,14 @@ function Scene(canvas, prefix) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['room2', 'floor', 'furniture_alpha10', 'projector'];
-      const PATH = "/hw10/models/";
+      const FILES = ['final_project'];
+      const PATH = "/final/models/";
       let MESHES = [];
 
       for (let i = 0; i < FILES.length; i++) {
          let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
-         addTexture(i, prefix+'/hw10/textures/', FILES[i] + '.png');
-         MESHES.push(new Mesh(data, false, false, 8, i));
+         // addTexture(i, prefix+'/final/textures/', FILES[i] + '.png');
+         MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1)));
       }
 
       return MESHES;
@@ -317,7 +318,7 @@ void main() {
       this.meshes.push(DURG2);
 
 
-      let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
+      let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 200);
       setUniform('Matrix4fv', 'uMP', false, P.m);
 
       this.C = new Mesh();
@@ -441,9 +442,9 @@ void main() {
          }
          this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, z * delta, -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
          const POS = this.C.getPosition();
-         POS.x = Math.max(-20, Math.min(20, POS.x));
-         POS.z = Math.max(-19, Math.min(19, POS.z));
-         POS.y = Math.max(0, Math.min(20, POS.y));
+         POS.x = Math.max(-X_MAX, Math.min(X_MAX, POS.x));
+         POS.z = Math.max(-Z_MAX, Math.min(Z_MAX, POS.z));
+         POS.y = Math.max(2, Math.min(20, POS.y));
          this.C.setPosition(POS.x, POS.y, POS.z);
          this.updateCam();
       }
@@ -470,4 +471,4 @@ void main() {
 
 }
 
-console.log("hw10.js loaded");
+console.log("final.js loaded");

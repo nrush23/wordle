@@ -48,7 +48,7 @@ class Mesh {
     R;
     S;
     Q;
-    COLOR = [0, 0, 0, 1];
+    COLOR = [1, 1, 1, 1];
     V;
     B;
     C;
@@ -59,7 +59,7 @@ class Mesh {
     textID = -1;
 
     children = [];
-    constructor(M = new Float32Array([]), triangle_strip = false, implicit = false, stride = 6, textID=-1) {
+    constructor(M = new Float32Array([]), triangle_strip = false, implicit = false, stride = 6, textID=-1, COLOR=[1,1,1,1]) {
         this.m = new Matrix(M);
         this.V = M;
         this.T = new Matrix().identity();
@@ -72,6 +72,8 @@ class Mesh {
 
         if (this.textID != -1){
             this.COLOR = [-1,-1,-1,-1];
+        }else{
+            this.COLOR = COLOR;
         }
 
         this.implicit = implicit;
