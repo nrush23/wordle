@@ -127,6 +127,7 @@ function Scene(canvas, prefix) {
       return MESHES;
    };
 
+   /**MOVE THIS TO SPAWN MANAGER, NEED TO SPAWN DURGS AND ZURGS */
    let makeDurg = async () => {
       const FILE = "durg.ply";
       const PATH = "/hw10/models/";
@@ -164,7 +165,7 @@ function Scene(canvas, prefix) {
                y *= -1;
             }
             M.clearRotation();
-            M.turnY(Math.atan2(direction.x / magnitude, -direction.z / magnitude));
+            M.turnY(Math.atan2(direction.x / magnitude, -direction.z / magnitude)); //Only for DURGS, ZURGS DON'T NEED TO BE SPUN
             M.move(x, 0, y);
          } else if (!M.waiting) {
             //Reached our goal, now compare our final stop to the next generated index
