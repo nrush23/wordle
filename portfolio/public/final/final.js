@@ -113,14 +113,15 @@ function Scene(canvas, prefix) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['final_project'];
+      const FILES = ['dod_windows'];
       const PATH = "/final/models/";
       let MESHES = [];
 
       for (let i = 0; i < FILES.length; i++) {
          let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
-         // addTexture(i, prefix+'/final/textures/', FILES[i] + '.png');
-         MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1)));
+         addTexture(i, prefix+'/final/textures/', FILES[i] + '.png');
+         MESHES.push(new Mesh(data, false, false, 8, i)); //(Map only needs to be flipped vertically)
+         // MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1))); //If color
       }
 
       return MESHES;
@@ -335,12 +336,14 @@ void main() {
    this.events = [['keyup', (evt) => {
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
          this.LEFT = false;
-      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
+      }
+      if (evt.key === 'ArrowRight' || evt.key === 'd') {
          this.RIGHT = false;
       }
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
          this.UP = false;
-      } else if (evt.key === 'ArrowDown' || evt.key === 's') {
+      }
+      if (evt.key === 'ArrowDown' || evt.key === 's') {
          this.DOWN = false;
       }
 
@@ -353,21 +356,24 @@ void main() {
       //If moving left or right, move by delta
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
          this.LEFT = true;
-      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
+      }
+      if (evt.key === 'ArrowRight' || evt.key === 'd') {
          this.RIGHT = true;
       }
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
          this.UP = true;
-      } else if (evt.key === 'ArrowDown' || evt.key === 's') {
+      } 
+      if (evt.key === 'ArrowDown' || evt.key === 's') {
          this.DOWN = true;
       }
 
 
       if (evt.key === ' ') {
          this.RISE = 'UP';
-      } else if (evt.key === 'Shift') {
+      } 
+      if (evt.key === 'Shift') {
          this.RISE = 'DOWN';
       }
 
@@ -413,18 +419,21 @@ void main() {
          const V = { x: 4, y: 4, z: 4 };
          let x = 0;
          let y = 0;
+         let z = 0;
 
          if (this.LEFT) {
-            x = -V.x;
-         } else if (this.RIGHT) {
-            x = V.x;
+            x += -V.x;
+         } 
+         if (this.RIGHT) {
+            x += V.x;
          }
 
 
          if (this.UP) {
-            y = V.y;
-         } else if (this.DOWN) {
-            y = -V.y;
+            y += V.y;
+         } 
+         if (this.DOWN) {
+            y += -V.y;
          }
          y *= delta;
          x *= delta;
@@ -434,12 +443,12 @@ void main() {
             x /= 2;
          }
          if (this.RISE === 'DOWN') {
-            z = -V.z;
-         } else if (this.RISE === 'UP') {
-            z = V.z;
-         } else {
-            z = 0;
+            z += -V.z;
+         } 
+         if (this.RISE === 'UP') {
+            z += V.z;
          }
+
          this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, z * delta, -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
          const POS = this.C.getPosition();
          POS.x = Math.max(-X_MAX, Math.min(X_MAX, POS.x));
