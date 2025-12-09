@@ -138,6 +138,8 @@ function Scene(canvas) {
    this.RIGHT = false;
    this.UP = false;
    this.DOWN = false;
+   this.DESCEND = false;
+   this.ASCEND = false;
 
    function rgb(r, g, b, a) {
       return [r / 255, g / 255, b / 255, a];
@@ -343,6 +345,16 @@ void main() {
    }
 
    this.initialize = async () => {
+      //NEW CODE
+      let NEW_CUBE = new Cube();
+
+      NEW_CUBE.scale(1, 1, 1);       // size
+      NEW_CUBE.move(0, 0, -5);        // put somewhere in the world
+      NEW_CUBE.turnY(Math.PI / 4);    // optional rotation
+      NEW_CUBE.COLOR = [1, 0, 0, 1];  // red
+
+      this.meshes.push(NEW_CUBE);
+      //NEW CODE
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
       setUniform('Matrix4fv', 'uMP', false, P.m);
 
@@ -361,39 +373,47 @@ void main() {
    this.events = [['keyup', (evt) => {
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
          this.LEFT = false;
-      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
+      } 
+      if (evt.key === 'ArrowRight' || evt.key === 'd') {
          this.RIGHT = false;
       }
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
          this.UP = false;
-      } else if (evt.key === 'ArrowDown' || evt.key === 's') {
+      } 
+      if (evt.key === 'ArrowDown' || evt.key === 's') {
          this.DOWN = false;
       }
 
-      if (evt.key === ' ' || evt.key === 'Shift') {
-         this.RISE = 'NONE';
+      if (evt.key === ' ' ) {
+         this.ASCEND = false;
+      }
+      if (evt.key === 'Shift'){
+         this.DESCEND = false;
       }
    }, false], ['keydown', (evt) => {
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
          this.LEFT = true;
-      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
+      } 
+      if (evt.key === 'ArrowRight' || evt.key === 'd') {
          this.RIGHT = true;
       }
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
          this.UP = true;
-      } else if (evt.key === 'ArrowDown' || evt.key === 's') {
+      } 
+      if (evt.key === 'ArrowDown' || evt.key === 's') {
          this.DOWN = true;
       }
 
 
-      if (evt.key === ' ') {
-         this.RISE = 'UP';
-      } else if (evt.key === 'Shift') {
-         this.RISE = 'DOWN';
+      if (evt.key === ' ' ) {
+         this.ASCEND = true;
+      }
+      if (evt.key === 'Shift'){
+         this.DESCEND = true;
       }
 
    }, false], ['mousemove', (evt) => {
@@ -442,34 +462,44 @@ void main() {
          const V = { x: 4, y: 4, z: 4 };
          let x = 0;
          let y = 0;
+         let z = 0;
 
          if (this.LEFT) {
-            x = -V.x;
-         } else if (this.RIGHT) {
-            x = V.x;
+            x -= V.x;
+         } 
+         if (this.RIGHT) {
+            x += V.x;
          }
 
 
          if (this.UP) {
-            y = V.y;
-         } else if (this.DOWN) {
-            y = -V.y;
+            y += V.y;
+         } 
+         if (this.DOWN) {
+            y -= V.y;
          }
+
+         if (this.ASCEND) {
+            z += V.z;
+         } 
+         if (this.DESCEND) {
+            z -= V.z;
+         } 
+
          y *= delta;
          x *= delta;
+         z *= delta;
 
+         //what this do? 11/18/2025 bobas
          if (x != 0 && y != 0) {
             y /= 2;
             x /= 2;
          }
-         if (this.RISE === 'DOWN') {
-            z = -V.z;
-         } else if (this.RISE === 'UP') {
-            z = V.z;
-         } else {
-            z = 0;
-         }
-         this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, z * delta, -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
+         
+
+         this.C.move(x * this.C.Q.m[0] + -this.C.Q.m[8] * y, 
+                     z, 
+                     -y * this.C.Q.m[10] + x * this.C.Q.m[2]);
          const POS = this.C.getPosition();
          POS.x = Math.max(-20, Math.min(20, POS.x));
          POS.z = Math.max(-19, Math.min(19, POS.z));

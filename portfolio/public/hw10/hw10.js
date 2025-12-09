@@ -7,10 +7,8 @@
 //X: 0.12
 
 const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.36], [4.46, 6.68], [-0.14, 0.03], [-2.55, 7.25], [-4.44, 1.53], [-4.3, -4.77]];
-
-// const prefix = Parser.prefix;
-
-function Scene(canvas, prefix) {
+// const DOOR_WAY = [-0.14, 0.03];
+function Scene(canvas,eventBus,gameSession) {
    this.yaw = 0;
    this.pitch = 0;
 
@@ -118,7 +116,7 @@ function Scene(canvas, prefix) {
 
       for (let i = 0; i < FILES.length; i++) {
          let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
-         addTexture(i, prefix+'/hw10/textures/', FILES[i] + '.png');
+         addTexture(i, '/hw10/textures/', FILES[i] + '.png');
          MESHES.push(new Mesh(data, false, false, 8, i));
       }
 
@@ -133,7 +131,7 @@ function Scene(canvas, prefix) {
 
       let M = new Mesh(data, false, false, 8, 4);
 
-      addTexture(4, prefix+'/hw10/textures/', 'skin1.png');
+      addTexture(4, '/hw10/textures/', 'skin1.png');
 
 
       M.move(0, 1, 0);
@@ -165,12 +163,10 @@ function Scene(canvas, prefix) {
             M.turnY(Math.atan2(direction.x / magnitude, -direction.z / magnitude));
             M.move(x, 0, y);
          } else if (!M.waiting) {
-            //Reached our goal, now compare our final stop to the next generated index
             M.waiting = true;
             const index = Math.floor(Math.random() * LOI.length);
-            const LAST = M.goal[M.goal.length-1];
             setTimeout(() => {
-               if ((LAST < 6 && index > 6) || LAST > 6 && index < 6) {
+               if ((M.goal[0] < 6 && index > 6) || M.goal[0] > 6 && index < 6) {
                   M.goal.push(6); //Index of the doorway
                }
                M.goal.shift();
@@ -183,6 +179,29 @@ function Scene(canvas, prefix) {
       return M;
    }
 
+   let makeRemoteDurg = async () => {
+      const FILE = "durg.ply";
+      const PATH = "/hw10/models/";
+
+      let data = await Parser.importMesh(PATH, FILE, true);
+
+      let M = new Mesh(data, false, false, 8, 4);
+
+      addTexture(4, '/hw10/textures/', 'skin1.png');
+
+
+      M.move(0, 1, 0);
+
+      M.goal = []
+      M.goal.push(getLOI());
+      M.waiting = false;
+
+      M.animate = (time) => {
+
+      }
+
+      return M;
+   }
 
    this.canvas = canvas;
 
@@ -288,6 +307,7 @@ void main() {
    }
 
    this.initialize = async () => {
+      this.hookIntoEventBus();
       vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
 
       setUniform('1iv', 'uSampler', [0, 1, 2, 3, 4]);
@@ -312,11 +332,16 @@ void main() {
 
       let DURG = await makeDurg();
       let DURG2 = await makeDurg();
-
+      let REMOTE_DURG = await makeRemoteDurg();
       this.meshes.push(DURG);
       this.meshes.push(DURG2);
+      this.meshes.push(REMOTE_DURG);
 
+      this.meshes = [];
+      let cube = new Cube(true);
+      this.meshes.push(cube);
 
+      cube.setPosition(-5,0,-10);
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
       setUniform('Matrix4fv', 'uMP', false, P.m);
 
@@ -333,41 +358,41 @@ void main() {
 
    this.events = [['keyup', (evt) => {
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
-         this.LEFT = false;
+         //this.LEFT = false;
       } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
-         this.RIGHT = false;
+         //this.RIGHT = false;
       }
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
-         this.UP = false;
+         //this.UP = false;
       } else if (evt.key === 'ArrowDown' || evt.key === 's') {
-         this.DOWN = false;
+         //this.DOWN = false;
       }
 
       if (evt.key === ' ' || evt.key === 'Shift') {
-         this.RISE = 'NONE';
+         //this.RISE = 'NONE';
       }
 
    }, false], ['keydown', (evt) => {
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
-         this.LEFT = true;
-      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {
-         this.RIGHT = true;
+         //this.LEFT = true;
+      } else if (evt.key === 'ArrowRight' || evt.key === 'd') {//
+         //this.RIGHT = true;
       }
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
-         this.UP = true;
+         //this.UP = true;
       } else if (evt.key === 'ArrowDown' || evt.key === 's') {
-         this.DOWN = true;
+         //this.DOWN = true;
       }
 
 
       if (evt.key === ' ') {
-         this.RISE = 'UP';
+         //this.RISE = 'UP';
       } else if (evt.key === 'Shift') {
-         this.RISE = 'DOWN';
+         //this.RISE = 'DOWN';
       }
 
    }, false], ['mousemove', (evt) => {
@@ -382,16 +407,50 @@ void main() {
             this.yaw += evt.movementX * V;
          }
 
-         this.C.clearRotation();
-         this.C.turnX(this.pitch);
-         this.C.turnY(this.yaw);
-         this.updateCam();
+         //this.C.clearRotation();
+         //this.C.turnX(this.pitch);
+         //this.C.turnY(this.yaw);
+         //this.updateCam();
       }
    }], ['click', async (evt) => {
       await this.canvas.requestPointerLock();
    }]];
 
+   //boba code
+   this.getDirectionalVectors = (matrix)=>{
+      let forward = {
+         x: -matrix[8],
+         y: -matrix[9],
+         z: -matrix[10]
+      };
+      let right = {
+         x: matrix[0],
+         y: matrix[1],
+         z: matrix[2]
+      };
+
+      let up = {
+         x: matrix[4],
+         y: matrix[5],
+         z: matrix[6]
+      };
+      return {
+         forward:forward,
+         right:right,
+         up:up
+      };
+   }
+   this.world = null;
+   this.hookIntoEventBus = ()=>{
+      eventBus.on("net:connect",(data)=>{
+         console.log(data);
+         console.log("client has connected and received id " + data);
+      });
+   }
+   //end boba code
+   
    this.update = () => {
+      gameSession.update();
       let time = Date.now() / 1000;
       this.updateMovement(time);
       COLOR = rgb(127.5 * Math.sin(time) + 127.5, 0, 0);
@@ -399,6 +458,7 @@ void main() {
       setUniform('1f', 'uTime', time - startTime);
       this.reloadShapes();
       prev = time;
+
    }
 
 
@@ -446,6 +506,7 @@ void main() {
          POS.y = Math.max(0, Math.min(20, POS.y));
          this.C.setPosition(POS.x, POS.y, POS.z);
          this.updateCam();
+         //console.log(this.getDirectionalVectors(this.C.Q.m).forward);
       }
    }
 
