@@ -1,3 +1,7 @@
+const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.36], [4.46, 6.68], [-0.14, 0.03], [-2.55, 7.25], [-4.44, 1.53], [-4.3, -4.77]];
+function getLOI(){
+    return Math.floor(Math.random() * LOI.length);
+}
 class SpawnManager{
     prefix;
     DURGS; /**Durg Class */
@@ -9,19 +13,30 @@ class SpawnManager{
         this.ZURGS = new Array(this.MAX_ZURGS); //Use to access the zombies (initialize all of them, but hide/tuck away in a corner until ready to checkpoint spawn)
         this.prefix = prefix;
     }
+    //NOTE: BOTH ZURGS AND DURGS WILL SHARE TEXTURE 4
 
     /**Look at final.js makeDurg, ZURGS DO NOT NEED TO BE ROTATED WHEN LOADED (NO ATAN TURN)
      * Model: zurg.ply (public/final/models/zurg.ply)
      * Texture: zurg.png (public/final/textures/zurg.png)
      */
-    addZurg(id){
+    async addZurg(id){
         if(this.ZURG_IND > this.MAX_ZURGS){
             console.warn("Max zurg limit reached");
             return;
         }else{
             this.ZURG_IND++;
             //Code for importing mesh from the parser
-            this.ZURGS[this.ZURG_IND] 
+            const FILE = 'zurg.ply';
+            const PATH = '/final/models/';
+
+            let data = await Parser.importMesh(PATH, FILE, true);
+            let zurg = new Mesh(data, false, false, 8, 4);
+
+            addTexture(4, prefix+'/hw10/textures/', 'zurg.png');
+
+
+            //Final step
+            this.ZURGS[this.ZURG_IND];
         }
     }
 
