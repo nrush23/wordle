@@ -49,4 +49,9 @@ class EntityManager{
     updateZurg(id, value){
 
     }
+
+    //Returns a list of the active meshes to be rendered in the main scenewha
+    updateBodies(){
+
+    }
 }
