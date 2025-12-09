@@ -2,7 +2,7 @@ const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.
 function getLOI(){
     return Math.floor(Math.random() * LOI.length);
 }
-class SpawnManager{
+class EntityManager{
     prefix;
     DURGS; /**Durg Class */
     ZURGS; /**Zurg Class */
@@ -12,6 +12,9 @@ class SpawnManager{
         this.DURGS = new Map(); //Use to access and update the other players and yourself
         this.ZURGS = new Array(this.MAX_ZURGS); //Use to access the zombies (initialize all of them, but hide/tuck away in a corner until ready to checkpoint spawn)
         this.prefix = prefix;
+
+        //We will set the texture for Durg and Zurg in the SpawnManager
+        addTexture(4, prefix+'/final/textures/', 'zurg.png');
     }
     //NOTE: BOTH ZURGS AND DURGS WILL SHARE TEXTURE 4
 
@@ -25,18 +28,7 @@ class SpawnManager{
             return;
         }else{
             this.ZURG_IND++;
-            //Code for importing mesh from the parser
-            const FILE = 'zurg.ply';
-            const PATH = '/final/models/';
-
-            let data = await Parser.importMesh(PATH, FILE, true);
-            let zurg = new Mesh(data, false, false, 8, 4);
-
-            addTexture(4, prefix+'/hw10/textures/', 'zurg.png');
-
-
-            //Final step
-            this.ZURGS[this.ZURG_IND];
+            this.ZURGS[this.ZURG_IND] = new Zurg(this.ZURG_IND);
         }
     }
 
@@ -45,7 +37,7 @@ class SpawnManager{
      * Texture: durg.png (public/hw10/textures/durg.png)
     */
     addDurg(id){
-
+        this.DURGS.set(id, new Durg(id));
     }
 
     /**Use enum to switch between updating health, position, ammo, etc. */

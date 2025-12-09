@@ -12,7 +12,7 @@ class Zurg{
         this.body = this.makeBody();
     }
 
-    async makeBody(target){
+    async makeBody(target=[4,4]){
         const FILE = 'zurg.ply';
         const PATH = '/final/models/';
 
@@ -24,9 +24,7 @@ class Zurg{
 
         this.setTarget(target);
 
-
-        
-
+        this.body = M;
     }
 
     /**Delta time */

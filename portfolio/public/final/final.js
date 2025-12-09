@@ -101,13 +101,6 @@ function Scene(canvas, prefix) {
       return [r / 255, g / 255, b / 255, a];
    }
 
-   function createWorld() {
-      let background = new Cube();
-      background.scale(50, 50, 50);
-      background.COLOR = rgb(0, 0, 0, 1);
-      return background;
-   }
-
    let getLOI = () => {
       return Math.floor(Math.random() * LOI.length);
    }
@@ -191,14 +184,6 @@ function Scene(canvas, prefix) {
 
    this.meshes = [];
 
-   function createGround() {
-      let GROUND = new Cube();
-      GROUND.scale(21, 0.2, 21);
-      GROUND.move(0, -0.55, 1);
-      GROUND.COLOR = rgb(255, 0, 255, 1);
-      return GROUND;
-   }
-
    function createArms() {
       let LEFT_ARM = new Cube(true);
       LEFT_ARM.scale(0.01, 0.01, 0.1);
@@ -214,8 +199,6 @@ function Scene(canvas, prefix) {
       return [LEFT_ARM, RIGHT_ARM];
    }
 
-
-   this.GROUND = createGround();
    const ARMS = createArms();
    this.meshes.push(ARMS);
    this.meshes = this.meshes.flat();
@@ -313,11 +296,11 @@ void main() {
       }, 500);
 
 
-      let DURG = await makeDurg();
-      let DURG2 = await makeDurg();
+      // let DURG = await makeDurg();
+      // let DURG2 = await makeDurg();
 
-      this.meshes.push(DURG);
-      this.meshes.push(DURG2);
+      // this.meshes.push(DURG);
+      // this.meshes.push(DURG2);
 
 
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 200);
