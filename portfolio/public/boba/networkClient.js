@@ -5,13 +5,9 @@ import WebSocketTransport from "./transport.js";
  * @typedef {Object} NetworkClientEventMap
  * @property {CustomEvent<{ connected: WebSocketTransport }>} connected
  * @property {CustomEvent<{ snapshot: string | ArrayBuffer | Blob }>} snapshot
- * @property {CustomEvent<{ playerJoined: Event | Error }>} playerJoined
- * @property {CustomEvent<{ chatMessage: number, reason: string, wasClean: boolean }>} chatMessage
  * @property {CustomEvent<{ serverError: number, reason: string, wasClean: boolean }>} serverError
  * @property {CustomEvent<{ disconnected: number, reason: string, wasClean: boolean }>} disconnected
  * @property {CustomEvent<{ reconnecting: number, reason: string, wasClean: boolean }>} reconnecting
- * @property {CustomEvent<{ reconnected: number, reason: string, wasClean: boolean }>} reconnected
- * @property {CustomEvent<{ latency: number, reason: string, wasClean: boolean }>} latency
  */
 
 /** @class NetworkClient abstracted game network protocol manager to handle client server handshake and game level protocol messages; uses transport interface for now just websockets in future a udp protocol based on gaffer on games article*/
@@ -80,7 +76,7 @@ export default class NetworkClient extends EventTarget{
 
         //once underlying transport is ready to send messages send out handshake request
         this.transport.addEventListener("open", (event) => {
-            console.log("transport open");
+            console.log("[NetworkClient]transport open");
             this.sendJoin({username:"wa da fak",secretKey:"asdasdasdasd"});
         });
 
@@ -95,7 +91,7 @@ export default class NetworkClient extends EventTarget{
                 switch(packet.id){
                     case 0://handshake complete; now transition to connected
                         let uuid = packet.uuid;
-                        console.log("finished connecting uuid id:"+uuid);
+                        console.log("{NetworkClient] finished connecting uuid id:"+uuid);
                         this.state = NetworkClient.STATES.CONNECTED;
                         this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.CONNECTED,{detail:{
                             uuid:uuid
@@ -116,7 +112,7 @@ export default class NetworkClient extends EventTarget{
                         }}));
                         break;
                     case 2://server pong
-                        console.log("received server pong");
+                        console.log("NetworkClient] received server pong");
                         break;
                     case 3:
                         this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.SNAPSHOT,{detail:{
@@ -125,10 +121,10 @@ export default class NetworkClient extends EventTarget{
                         break;
                         break;
                     default:
-                        console.warn("unknown packet id received "+packet.id);
+                        console.warn("[NetworkClient] unknown packet id received "+packet.id);
                 }
             } catch (error) {
-                console.error("Failed to parse JSON:", error.message);
+                console.error("NetworkClient] Failed to parse JSON:", error.message);
                 this.transport.close(NetworkClient.CODES.normal,"failed to parse json");
             }
 
@@ -140,7 +136,7 @@ export default class NetworkClient extends EventTarget{
 
         });
         this.transport.connect(url);
-        console.log("connecting...");
+        console.log("NetworkClient] connecting...");
     }
     disconnect(code,reason){
 

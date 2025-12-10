@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
 import Script from "next/script";
 import Header from "../../components/header";
 
 //testing
+import React, { useState, useRef, useEffect } from 'react';
 import ConnectRequestMessage from '../../../../public/boba/Network/connectRequest.js';
 import GameSession from '../../../../public/boba/gameSession.js';
 import NetworkClient from '../../../../public/boba/networkClient.js';

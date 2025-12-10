@@ -5,7 +5,31 @@ import Header from "../../components/header";
 
 const prefix = process.env.BASE_PATH || "";
 
+//testing
+import React, { useState, useRef, useEffect } from 'react';
+import ConnectRequestMessage from '../../../../public/boba/Network/connectRequest.js';
+import GameSession from '../../../../public/boba/gameSession.js';
+import NetworkClient from '../../../../public/boba/networkClient.js';
+import InputManager from '../../../../public/boba/inputManager.js';
+import createEventBus from "../../../../public/boba/Events/eventBus.js";
+//end testing
+
 export default function HW10() {
+
+  const eventBus = useRef(createEventBus());
+  const inputManager = useRef(new InputManager());
+  const networkClient = useRef(new NetworkClient());
+  const gameSession = useRef(new GameSession(eventBus.current, networkClient.current, inputManager.current));
+
+  //trigger on component mount and unmount
+  useEffect(() => {
+    inputManager.current.addListeners(document.getElementById("glcanvas"));
+    return () => {
+      // cleaning up the listeners here
+      inputManager.current.removeListeners(document.getElementById("glcanvas"));
+    }
+  }, []);
+
   return (
     <div className="font-sans min-h-screen flex flex-col">
       <Header></Header>
@@ -26,7 +50,7 @@ export default function HW10() {
             resizeWindow();
             window.addEventListener("resize", resizeWindow);
             Parser.prefix = prefix;
-            gl_start(canvas, new Scene(canvas, prefix));
+            gl_start(canvas, new Scene(canvas, prefix, gameSession.current));
           }}
         ></Script>
       </main>

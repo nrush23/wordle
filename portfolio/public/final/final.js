@@ -11,7 +11,9 @@ const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.
 const X_MAX = 38.75;
 const Z_MAX = 38.75;
 
-function Scene(canvas, prefix) {
+function Scene(canvas, prefix, gameSession) {
+   this.gameSession = gameSession;
+   
    this.yaw = 0;
    this.pitch = 0;
 
@@ -315,50 +317,74 @@ void main() {
       this.C.move(0, 2, 3);
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
 
+      this.gameSession.scene = this; // boba
+      this.gameSession.eventBus.emit("scene:initialized",{
+         loadDurgModel:this.loadDurgModel,
+         meshes:this.meshes
+      });
    }
 
+   //boba: start
+   this.loadDurgModel = async () => {
+      const FILE = "durg.ply";
+      const PATH = "/hw10/models/";
+
+      let data = await Parser.importMesh(PATH, FILE, true);
+
+      let M = new Mesh(data, false, false, 8, 4);
+
+      addTexture(4, prefix+'/hw10/textures/', 'skin1.png');
+
+
+      M.move(0, 1, 0);
+
+      return M;
+   }
+   //boba: end
+
    this.events = [['keyup', (evt) => {
+      
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
-         this.LEFT = false;
+         //this.LEFT = false; //boba
       }
       if (evt.key === 'ArrowRight' || evt.key === 'd') {
-         this.RIGHT = false;
+         //this.RIGHT = false; //boba
       }
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
-         this.UP = false;
+         //this.UP = false; //boba
       }
       if (evt.key === 'ArrowDown' || evt.key === 's') {
-         this.DOWN = false;
+         //this.DOWN = false; //boba
       }
 
       if (evt.key === ' ' || evt.key === 'Shift') {
-         this.RISE = 'NONE';
+         //this.RISE = 'NONE'; //boba
       }
 
    }, false], ['keydown', (evt) => {
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowLeft' || evt.key === 'a') {
-         this.LEFT = true;
+         //this.LEFT = true; //boba
       }
       if (evt.key === 'ArrowRight' || evt.key === 'd') {
-         this.RIGHT = true;
+         //this.RIGHT = true; //boba
       }
 
       //If moving left or right, move by delta
       if (evt.key === 'ArrowUp' || evt.key === 'w') {
-         this.UP = true;
+         //this.UP = true; //boba
       } 
       if (evt.key === 'ArrowDown' || evt.key === 's') {
-         this.DOWN = true;
+         //this.DOWN = true; //boba
       }
 
 
       if (evt.key === ' ') {
-         this.RISE = 'UP';
+         //this.RISE = 'UP'; //boba
       } 
       if (evt.key === 'Shift') {
-         this.RISE = 'DOWN';
+         //this.RISE = 'DOWN'; //boba
       }
 
    }, false], ['mousemove', (evt) => {
@@ -383,18 +409,38 @@ void main() {
    }]];
 
    this.update = () => {
+      if(this.gameSession !== undefined){
+         this.gameSession.update();
+      }
       let time = Date.now() / 1000;
       this.updateMovement(time);
-      COLOR = rgb(127.5 * Math.sin(time) + 127.5, 0, 0);
-      this.GROUND.COLOR = COLOR;
+      const COLOR = rgb(127.5 * Math.sin(time) + 127.5, 0, 0);
+      //this.GROUND.COLOR = COLOR;
       setUniform('1f', 'uTime', time - startTime);
       this.reloadShapes();
       prev = time;
    }
 
+   this.renderSnapshot = (snapshot,uuid)=>{
+
+   };
+
 
    this.updateCam = () => {
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
+   }
+
+   this.setCameraPosition = (x, y, z) => {
+      // Clamp values
+      x = Math.max(-X_MAX, Math.min(X_MAX, x));
+      y = Math.max(2, Math.min(20, y));
+      z = Math.max(-Z_MAX, Math.min(Z_MAX, z));
+
+      // Apply to camera
+      this.C.setPosition(x, y, z);
+
+      // Force camera update
+      this.updateCam();
    }
 
    this.updateMovement = (time) => {

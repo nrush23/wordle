@@ -22,8 +22,8 @@ class Transport extends EventTarget{
         throw new Error("Transport.send must be implemented by subclass");
     }
     /**
-    * Request a graceful close of the underlying connection.
-    * Implementations are responsible for transitioning to "closing" / "closed".
+    * Request graceful close
+    * Implementations are responsible for transitioning to closing/closed
     * Based on WS Library close
     * @param {number} [code]
     * @param {string} [reason]
