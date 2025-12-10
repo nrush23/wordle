@@ -8,6 +8,9 @@ class EntityManager{
     ZURGS; /**Zurg Class */
     MAX_ZURGS = 10;
     ZURG_IND=-1;
+
+    HIDDEN = [];
+    
     constructor(prefix){
         this.DURGS = new Map(); //Use to access and update the other players and yourself
         this.ZURGS = new Array(this.MAX_ZURGS); //Use to access the zombies (initialize all of them, but hide/tuck away in a corner until ready to checkpoint spawn)
