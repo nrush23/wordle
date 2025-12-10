@@ -386,7 +386,7 @@ void main() {
       let time = Date.now() / 1000;
       this.updateMovement(time);
       COLOR = rgb(127.5 * Math.sin(time) + 127.5, 0, 0);
-      this.GROUND.COLOR = COLOR;
+      // this.GROUND.COLOR = COLOR;
       setUniform('1f', 'uTime', time - startTime);
       this.reloadShapes();
       prev = time;
