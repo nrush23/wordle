@@ -5,6 +5,7 @@ export default class InputManager{
     right;
     jump;
     constructor(){
+        this.gameShell = undefined;
         this.left = false;
         this.right = false;
         this.forward = false;
@@ -13,14 +14,17 @@ export default class InputManager{
 
         this.onKeyDownBound = this.onKeyDown.bind(this);
         this.onKeyUpBound = this.onKeyUp.bind(this);
+        this.onMouseDownBound = this.onMouseDown.bind(this);
     }
     addListeners(eventTarget){
         eventTarget.addEventListener("keydown",this.onKeyDownBound);
         eventTarget.addEventListener("keyup",this.onKeyUpBound);
+        eventTarget.addEventListener("mousedown",this.onMouseDownBound);
     }
     removeListeners(eventTarget){
         eventTarget.removeEventListener("keydown",this.onKeyDownBound);
         eventTarget.removeEventListener("keyup",this.onKeyUpBound);
+        eventTarget.removeEventListener("mousedown",this.onMouseDownBound);
     }
     onKeyDown(event){
         //note when a directional is pressed immediately release the opposite directional
@@ -65,5 +69,8 @@ export default class InputManager{
                 this.jump = false;
                 break;
         }
+    }
+    onMouseDown(event){
+        this.gameShell.dispatchEvent(new CustomEvent("shoot"));
     }
 }

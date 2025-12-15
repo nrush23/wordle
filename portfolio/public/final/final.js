@@ -2,6 +2,7 @@
  * @param {*} canvas 
  */
 
+
 //UV OFFSETS FROM BLENDER:
 //Y: 0.2
 //X: 0.12
@@ -323,6 +324,34 @@ void main() {
          camera:this.C,
          meshes:this.meshes
       });
+
+      this.testCube = new Cube(true);
+
+      for (let i =0;i<5;i++){
+         let cube = new Cube(true);
+         cube.name = "target "+ i;
+         
+         cube.setPosition(-20 + (i*20) , 50 , 0);
+         let index = this.meshes.push(cube);
+         cube.metadata = {
+            id:index-1
+         };
+      }
+      this.gameSession.eventBus.on("game:hit",(event)=>{
+         console.log('a target was hit');
+         for(let i=this.meshes.length-1;i>-1;i--){
+            if(this.meshes[i].name){
+               if(this.meshes[i].name === event.name){
+                  this.meshes.splice(i,1);
+                  i=-1;
+               }
+            }
+         }
+      });
+
+      this.testCube.name = "testCube";
+      this.meshes.push(this.testCube);
+
    }
 
    //boba: start
@@ -338,6 +367,12 @@ void main() {
 
 
       M.move(0, 1, 0);
+
+
+      //debug to outline bounding box
+      let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
+      this.meshes.push(boundingBox);
+      //end debug 
 
       return M;
    }
@@ -434,6 +469,7 @@ void main() {
          this.C.turnX(this.pitch);
          this.C.turnY(this.yaw);
          this.updateCam();
+         
       }
    }], ['click', async (evt) => {
       await this.canvas.requestPointerLock();
@@ -442,6 +478,16 @@ void main() {
    this.update = () => {
       if(this.gameSession !== undefined){
          this.gameSession.update();
+         /*let direction = this.getDirectionalVectors(this.C.Q.m);
+         if(this.testCube){
+            let position = this.C.getPosition();
+            let distance = 100;
+            this.testCube.setPosition(
+               position.x + direction.forward.x * distance,
+               position.y + direction.forward.y * distance,
+               position.z + direction.forward.z * distance
+            );
+         }*/
       }
       let time = Date.now() / 1000;
       this.updateMovement(time);

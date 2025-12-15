@@ -24,6 +24,7 @@ export default class GameSession extends EventTarget{
         this.eventBus = eventBus;
         this.networkClient = networkClient;
         this.inputManager = inputManager;
+        this.inputManager.gameShell = this;
         this.scene = undefined;
         this.camera = undefined;
         console.log(networkClient);
@@ -45,10 +46,14 @@ export default class GameSession extends EventTarget{
         this.unusedModels = [];
         this.eventBus.on("scene:initialized",(event)=>{
             
+            
 
             const loadDurgModel = event.loadDurgModel;
             const meshes = event.meshes;
             this.camera = event.camera;
+            
+            //after scene is initialized 
+            
             
 
                 //fill pool
@@ -63,7 +68,20 @@ export default class GameSession extends EventTarget{
                     console.log(error);
                 });
             }
-           
+            this.addEventListener("shoot", () => {
+                let directions = this.getDirectionalVectors(this.camera.Q.m);
+                let result = raycastMeshesAABBAllHits(this.camera.getPosition(), directions.forward, 1000, meshes);
+                console.log(result);
+                if(result.length>0){
+                    result.forEach((value)=>{
+                        if(value.mesh.metadata){
+                            this.eventBus.emit("game:hit",{name:value.mesh.name});
+                        }
+                    });
+                }
+            });
+            
+            
             this.networkClient.addEventListener(NetworkClient.EVENTS.SNAPSHOT, (event) => {
                 let snapshot = event.detail.snapshot;
                 if(this.scene){
@@ -207,11 +225,90 @@ export default class GameSession extends EventTarget{
       };
    }
 }
+//BB = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 }, z: { min: 0, max: 0 } };
+function getAABB(body) {
+    const { x, y, z } = body.getPosition();
+    const BB = body.BB;
 
-class GameState{
-    players;
+    return {
+        min: {
+            x: x + BB.x.min,
+            y: y + BB.y.min,
+            z: z + BB.z.min
+        },
+        max: {
+            x: x + BB.x.max,
+            y: y + BB.y.max,
+            z: z + BB.z.max
+        }
+    };
 }
-class Player{
-    mesh;
-    position;
+// Returns ALL hits as an array of { index, distance }, sorted by distance ascending.
+// Uses getAABB(mesh) to fetch each mesh's {min,max} box.
+function raycastMeshesAABBAllHits(origin, direction, length, meshes) {
+    const EPS = 1e-8;
+
+    const mag = Math.hypot(direction.x, direction.y, direction.z);
+    if (mag < EPS || length <= 0) return [];
+
+    // Normalize so length/distance are in world units
+    const dir = { x: direction.x / mag, y: direction.y / mag, z: direction.z / mag };
+
+    const hits = [];
+    for (let i = 0; i < meshes.length; i++) {
+        const box = getAABB(meshes[i]);         // <-- uses your getAABB
+        const t = rayIntersectsAABB(origin, dir, length, box);
+        if (t !== null) hits.push({ index: i, distance: t, mesh:meshes[i] });
+    }
+
+    hits.sort((a, b) => a.distance - b.distance);
+    return hits;
+}
+
+// Slab test: ray segment [0, maxDist] vs AABB returned by getAABB:
+// box = { min:{x,y,z}, max:{x,y,z} }
+// Returns tHit (number) if hit, otherwise null.
+function rayIntersectsAABB(origin, dir, maxDist, box) {
+    let tmin = 0;
+    let tmax = maxDist;
+
+    function slab(o, d, minB, maxB) {
+        const EPS = 1e-8;
+
+        // Parallel to axis: origin must be inside slab
+        if (Math.abs(d) < EPS) {
+            if (o < minB || o > maxB) return null;
+            return { t1: -Infinity, t2: Infinity };
+        }
+
+        const invD = 1 / d;
+        let t1 = (minB - o) * invD;
+        let t2 = (maxB - o) * invD;
+        if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+        return { t1, t2 };
+    }
+
+    const sx = slab(origin.x, dir.x, box.min.x, box.max.x);
+    if (!sx) return null;
+    tmin = Math.max(tmin, sx.t1);
+    tmax = Math.min(tmax, sx.t2);
+    if (tmax < tmin) return null;
+
+    const sy = slab(origin.y, dir.y, box.min.y, box.max.y);
+    if (!sy) return null;
+    tmin = Math.max(tmin, sy.t1);
+    tmax = Math.min(tmax, sy.t2);
+    if (tmax < tmin) return null;
+
+    const sz = slab(origin.z, dir.z, box.min.z, box.max.z);
+    if (!sz) return null;
+    tmin = Math.max(tmin, sz.t1);
+    tmax = Math.min(tmax, sz.t2);
+    if (tmax < tmin) return null;
+
+    // Entire AABB interval is behind the ray start
+    if (tmax < 0) return null;
+
+    const tHit = Math.max(tmin, 0);
+    return tHit <= maxDist ? tHit : null;
 }

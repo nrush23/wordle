@@ -57,6 +57,8 @@ class Mesh {
     force;
     stride;
     textID = -1;
+    name;
+    metadata;
 
     children = [];
     constructor(M = new Float32Array([]), triangle_strip = false, implicit = false, stride = 6, textID=-1, COLOR=[1,1,1,1]) {
@@ -631,4 +633,85 @@ class Cube extends Mesh {
             ]))
         }
     }
+}
+
+
+//idk wtf this doing but it work good enough
+class BoundingBoxMesh extends Mesh {
+  constructor(targetMesh, color = [1, 1, 1, 1]) {
+        const hx = targetMesh.length.x / 2;
+        const hy = targetMesh.length.y / 2;
+        const hz = targetMesh.length.z / 2;
+
+        // Helper to scale cube vertex positions
+        const S = (x, y, z) => [x * hx, y * hy, z * hz];
+
+        const V = new Float32Array([
+            ...S(-1,  1, -1), 0, 1, 0, 0.875, 0.5,
+            ...S( 1,  1,  1), 0, 1, 0, 0.625, 0.75,
+            ...S( 1,  1, -1), 0, 1, 0, 0.625, 0.5,
+            ...S( 1,  1,  1), 0, 0, 1, 0.625, 0.75,
+            ...S(-1, -1,  1), 0, 0, 1, 0.375, 1,
+            ...S( 1, -1,  1), 0, 0, 1, 0.375, 0.75,
+            ...S(-1,  1,  1), -1, 0, 0, 0.625, 0,
+            ...S(-1, -1, -1), -1, 0, 0, 0.375, 0.25,
+            ...S(-1, -1,  1), -1, 0, 0, 0.375, 0,
+            ...S( 1, -1, -1), 0, -1, 0, 0.375, 0.5,
+            ...S(-1, -1,  1), 0, -1, 0, 0.125, 0.75,
+            ...S(-1, -1, -1), 0, -1, 0, 0.125, 0.5,
+            ...S( 1,  1, -1), 1, 0, 0, 0.625, 0.5,
+            ...S( 1, -1,  1), 1, 0, 0, 0.375, 0.75,
+            ...S( 1, -1, -1), 1, 0, 0, 0.375, 0.5,
+            ...S(-1,  1, -1), 0, 0, -1, 0.625, 0.25,
+            ...S( 1, -1, -1), 0, 0, -1, 0.375, 0.5,
+            ...S(-1, -1, -1), 0, 0, -1, 0.375, 0.25,
+            ...S(-1,  1, -1), 0, 1, 0, 0.875, 0.5,
+            ...S(-1,  1,  1), 0, 1, 0, 0.875, 0.75,
+            ...S( 1,  1,  1), 0, 1, 0, 0.625, 0.75,
+            ...S(-1,  1,  1), 0, 0, 1, 0.625, 1,
+            ...S(-1, -1,  1), 0, 0, 1, 0.375, 1,
+            ...S(-1,  1,  1), -1, 0, 0, 0.625, 0,
+            ...S(-1,  1, -1), -1, 0, 0, 0.625, 0.25,
+            ...S(-1, -1, -1), -1, 0, 0, 0.375, 0.25,
+            ...S( 1, -1, -1), 0, -1, 0, 0.375, 0.5,
+            ...S( 1, -1,  1), 0, -1, 0, 0.375, 0.75,
+            ...S(-1, -1,  1), 0, -1, 0, 0.125, 0.75,
+            ...S( 1,  1, -1), 1, 0, 0, 0.625, 0.5,
+            ...S( 1,  1,  1), 1, 0, 0, 0.625, 0.75,
+            ...S( 1, -1,  1), 1, 0, 0, 0.375, 0.75,
+            ...S(-1,  1, -1), 0, 0, -1, 0.625, 0.25,
+            ...S( 1,  1, -1), 0, 0, -1, 0.625, 0.5,
+            ...S( 1, -1, -1), 0, 0, -1, 0.375, 0.5,
+        ]);
+
+        super(V, false, false, 8, -1, color);
+
+        // Attach as child without position compensation
+        this.parent = targetMesh;
+        targetMesh.children.push(this);
+
+        this.setPosition(0, 0, 0);
+        this.bake();
+    }
+
+  // Optional: rebuild if the target mesh's geometry changes (e.g., after deformation)
+  updateFrom(targetMesh) {
+    targetMesh.getLengths(); // recompute .length from targetMesh.V if needed
+
+    const hx = targetMesh.length.x / 2;
+    const hy = targetMesh.length.y / 2;
+    const hz = targetMesh.length.z / 2;
+
+    // rewrite positions in-place (normals unchanged)
+    for (let i = 0; i < this.V.length; i += this.stride) {
+      const nx = this.V[i + 3], ny = this.V[i + 4], nz = this.V[i + 5];
+      // pick coordinate by normal sign & axis (since it's a box)
+      if (nx !== 0) this.V[i] = nx > 0 ? hx : -hx;
+      if (ny !== 0) this.V[i + 1] = ny > 0 ? hy : -hy;
+      if (nz !== 0) this.V[i + 2] = nz > 0 ? hz : -hz;
+    }
+
+    this.getLengths();
+    this.bake();
+  }
 }

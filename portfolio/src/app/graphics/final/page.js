@@ -36,6 +36,18 @@ export default function HW10() {
       <main className="flex flex-col flex-1 w-full items-center">
         <div className="text-center font-semibold">Durg&apos;s Durgers: The Final</div>
         <canvas style={{outline: 'none'}}id="glcanvas" tabIndex={0} className="bg-[rgb(224,224,224)] w-full flex-1"/>
+        <div
+          className="absolute"
+          style={{
+            width: "4px",
+            height: "4px",
+            backgroundColor: "red",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "none", // so it never interferes with input
+          }}
+        />
         <Script src={`${prefix}/final/final.js`}></Script>
         <Script src={`${prefix}/mesh.js`}></Script>
         <Script src={`${prefix}/parser.js`}></Script>
