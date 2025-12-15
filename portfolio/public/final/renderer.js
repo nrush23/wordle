@@ -13,8 +13,9 @@ const X_MAX = 38.75;
 const Z_MAX = 38.75;
 
 function Scene(canvas, prefix, gameSession) {
+
    this.gameSession = gameSession;
-   
+
    this.yaw = 0;
    this.pitch = 0;
 
@@ -24,6 +25,12 @@ function Scene(canvas, prefix, gameSession) {
    this.YOFF = 0;
    const N = 20;
    this.N = 0;
+
+   this.canvas = canvas;
+   this.MESHES = [];
+
+   this.P = new Matrix()
+
    let evalBezier = (t, BX, BY, BZ, getF = false) => {
       let nk = (BX.length - 1) / 3;
 
@@ -104,18 +111,14 @@ function Scene(canvas, prefix, gameSession) {
       return [r / 255, g / 255, b / 255, a];
    }
 
-   let getLOI = () => {
-      return Math.floor(Math.random() * LOI.length);
-   }
-
    let makeRoom = async () => {
-      const FILES = ['dod_windows'];
+      const FILES = ['dod_windows_sep'];
       const PATH = "/final/models/";
       let MESHES = [];
 
       for (let i = 0; i < FILES.length; i++) {
          let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
-         addTexture(i, prefix+'/final/textures/', FILES[i] + '.png');
+         addTexture(i, prefix + '/final/textures/', FILES[i] + '.png');
          MESHES.push(new Mesh(data, false, false, 8, i)); //(Map only needs to be flipped vertically)
          // MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1))); //If color
       }
@@ -123,69 +126,7 @@ function Scene(canvas, prefix, gameSession) {
       return MESHES;
    };
 
-   /**MOVE THIS TO SPAWN MANAGER, NEED TO SPAWN DURGS AND ZURGS */
-   let makeDurg = async () => {
-      const FILE = "durg.ply";
-      const PATH = "/hw10/models/";
 
-      let data = await Parser.importMesh(PATH, FILE, true);
-
-      let M = new Mesh(data, false, false, 8, 4);
-
-      addTexture(4, prefix+'/hw10/textures/', 'skin1.png');
-
-
-      M.move(0, 1, 0);
-
-      M.goal = []
-      M.goal.push(getLOI());
-      M.waiting = false;
-
-      M.animate = (time) => {
-
-         const curr = M.getPosition(false);
-         const goal = LOI[M.goal[0]];
-         const direction = { x: goal[0] - curr.x, z: goal[1] - curr.z };
-         const magnitude = Math.sqrt(direction.x ** 2 + direction.z ** 2);
-         if (magnitude > 0.3) {
-            let delta = time - prev;
-            const V = { x: 1, y: 1, z: 1 };
-            let x = V.x * delta;
-            let y = V.y * delta;
-
-
-            if (direction.x < 0) {
-               x *= -1;
-            }
-            if (direction.z < 0) {
-               y *= -1;
-            }
-            M.clearRotation();
-            M.turnY(Math.atan2(direction.x / magnitude, -direction.z / magnitude)); //Only for DURGS, ZURGS DON'T NEED TO BE SPUN
-            M.move(x, 0, y);
-         } else if (!M.waiting) {
-            //Reached our goal, now compare our final stop to the next generated index
-            M.waiting = true;
-            const index = Math.floor(Math.random() * LOI.length);
-            const LAST = M.goal[M.goal.length-1];
-            setTimeout(() => {
-               if ((LAST < 6 && index > 6) || LAST > 6 && index < 6) {
-                  M.goal.push(6); //Index of the doorway
-               }
-               M.goal.shift();
-               M.waiting = false;
-               M.goal.push(index);
-            }, 2000);
-         }
-      }
-
-      return M;
-   }
-
-
-   this.canvas = canvas;
-
-   this.meshes = [];
 
    function createArms() {
       let LEFT_ARM = new Cube(true);
@@ -203,10 +144,9 @@ function Scene(canvas, prefix, gameSession) {
    }
 
    const ARMS = createArms();
-   this.meshes.push(ARMS);
-   this.meshes = this.meshes.flat();
+   this.MESHES.push(ARMS);
+   this.MESHES = this.MESHES.flat();
 
-   this.P = new Matrix()
 
    this.vertexShader = `\
 #version 300 es
@@ -283,7 +223,7 @@ void main() {
       setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
       let ROOM = await makeRoom();
       ROOM.forEach(mesh => {
-         this.meshes.push(mesh);
+         this.MESHES.push(mesh);
       })
 
       setInterval(() => {
@@ -298,14 +238,6 @@ void main() {
          setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
       }, 500);
 
-
-      // let DURG = await makeDurg();
-      // let DURG2 = await makeDurg();
-
-      // this.meshes.push(DURG);
-      // this.meshes.push(DURG2);
-
-
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 200);
       setUniform('Matrix4fv', 'uMP', false, P.m);
 
@@ -319,10 +251,10 @@ void main() {
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
 
       this.gameSession.scene = this; // boba
-      this.gameSession.eventBus.emit("scene:initialized",{
-         loadDurgModel:this.loadDurgModel,
-         camera:this.C,
-         meshes:this.meshes
+      this.gameSession.eventBus.emit("scene:initialized", {
+         loadDurgModel: this.loadDurgModel,
+         camera: this.C,
+         meshes: this.MESHES
       });
 
       this.testCube = new Cube(true);
@@ -363,7 +295,7 @@ void main() {
 
       let M = new Mesh(data, false, false, 8, 4);
 
-      addTexture(4, prefix+'/hw10/textures/', 'skin1.png');
+      addTexture(4, prefix + '/hw10/textures/', 'skin1.png');
 
 
       M.move(0, 1, 0);
@@ -376,7 +308,7 @@ void main() {
 
       return M;
    }
-   this.getDirectionalVectors = (matrix)=>{
+   this.getDirectionalVectors = (matrix) => {
       let forward = {
          x: -matrix[8],
          y: -matrix[9],
@@ -394,9 +326,9 @@ void main() {
          z: matrix[6]
       };
       return {
-         forward:forward,
-         right:right,
-         up:up
+         forward: forward,
+         right: right,
+         up: up
       };
    }
    function lerpVec3(a, b, t) {
@@ -408,52 +340,7 @@ void main() {
    }
    //boba: end
 
-   this.events = [['keyup', (evt) => {
-      
-      if (evt.key === 'ArrowLeft' || evt.key === 'a') {
-         //this.LEFT = false; //boba
-      }
-      if (evt.key === 'ArrowRight' || evt.key === 'd') {
-         //this.RIGHT = false; //boba
-      }
-      if (evt.key === 'ArrowUp' || evt.key === 'w') {
-         //this.UP = false; //boba
-      }
-      if (evt.key === 'ArrowDown' || evt.key === 's') {
-         //this.DOWN = false; //boba
-      }
-
-      if (evt.key === ' ' || evt.key === 'Shift') {
-         //this.RISE = 'NONE'; //boba
-      }
-
-   }, false], ['keydown', (evt) => {
-
-      //If moving left or right, move by delta
-      if (evt.key === 'ArrowLeft' || evt.key === 'a') {
-         //this.LEFT = true; //boba
-      }
-      if (evt.key === 'ArrowRight' || evt.key === 'd') {
-         //this.RIGHT = true; //boba
-      }
-
-      //If moving left or right, move by delta
-      if (evt.key === 'ArrowUp' || evt.key === 'w') {
-         //this.UP = true; //boba
-      } 
-      if (evt.key === 'ArrowDown' || evt.key === 's') {
-         //this.DOWN = true; //boba
-      }
-
-
-      if (evt.key === ' ') {
-         //this.RISE = 'UP'; //boba
-      } 
-      if (evt.key === 'Shift') {
-         //this.RISE = 'DOWN'; //boba
-      }
-
-   }, false], ['mousemove', (evt) => {
+   this.events = [['mousemove', (evt) => {
       if (this.C) {
 
          //Treat rotation like velocity + position update
@@ -476,7 +363,7 @@ void main() {
    }]];
 
    this.update = () => {
-      if(this.gameSession !== undefined){
+      if (this.gameSession !== undefined) {
          this.gameSession.update();
          /*let direction = this.getDirectionalVectors(this.C.Q.m);
          if(this.testCube){
@@ -490,15 +377,13 @@ void main() {
          }*/
       }
       let time = Date.now() / 1000;
-      this.updateMovement(time);
-      const COLOR = rgb(127.5 * Math.sin(time) + 127.5, 0, 0);
-      //this.GROUND.COLOR = COLOR;
+      this.updateMovement(time);;
       setUniform('1f', 'uTime', time - startTime);
       this.reloadShapes();
       prev = time;
    }
 
-   this.renderSnapshot = (snapshot,uuid)=>{
+   this.renderSnapshot = (snapshot, uuid) => {
 
    };
 
@@ -530,7 +415,7 @@ void main() {
 
          if (this.LEFT) {
             x += -V.x;
-         } 
+         }
          if (this.RIGHT) {
             x += V.x;
          }
@@ -538,7 +423,7 @@ void main() {
 
          if (this.UP) {
             y += V.y;
-         } 
+         }
          if (this.DOWN) {
             y += -V.y;
          }
@@ -551,7 +436,7 @@ void main() {
          }
          if (this.RISE === 'DOWN') {
             z += -V.z;
-         } 
+         }
          if (this.RISE === 'UP') {
             z += V.z;
          }
@@ -568,9 +453,12 @@ void main() {
 
 
    this.reloadShapes = () => {
-      const N = this.meshes.length;
+      const N = this.MESHES.length;
       for (let i = 0; i < N; i++) {
-         let mesh = this.meshes[i];
+         let mesh = this.MESHES[i];
+         if (!mesh.render) {
+            continue;
+         }
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);
          }

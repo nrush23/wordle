@@ -7,14 +7,14 @@ const prefix = process.env.BASE_PATH || "";
 
 //testing
 import React, { useState, useRef, useEffect } from 'react';
-import ConnectRequestMessage from '../../../../public/boba/Network/connectRequest.js';
-import GameSession from '../../../../public/boba/gameSession.js';
-import NetworkClient from '../../../../public/boba/networkClient.js';
-import InputManager from '../../../../public/boba/inputManager.js';
-import createEventBus from "../../../../public/boba/Events/eventBus.js";
+import ConnectRequestMessage from '../../../../public/network/Network/connectRequest.js';
+import GameSession from '../../../../public/network/gameSession.js';
+import NetworkClient from '../../../../public/network/networkClient.js';
+import InputManager from '../../../../public/network/inputManager.js';
+import createEventBus from "../../../../public/network/Events/eventBus.js";
 //end testing
 
-export default function HW10() {
+export default function Final() {
 
   const eventBus = useRef(createEventBus());
   const inputManager = useRef(new InputManager());
@@ -36,6 +36,7 @@ export default function HW10() {
       <main className="flex flex-col flex-1 w-full items-center">
         <div className="text-center font-semibold">Durg&apos;s Durgers: The Final</div>
         <canvas style={{outline: 'none'}}id="glcanvas" tabIndex={0} className="bg-[rgb(224,224,224)] w-full flex-1"/>
+<<<<<<< HEAD
         <div
           className="absolute"
           style={{
@@ -49,6 +50,9 @@ export default function HW10() {
           }}
         />
         <Script src={`${prefix}/final/final.js`}></Script>
+=======
+        <Script src={`${prefix}/final/renderer.js`}></Script>
+>>>>>>> d06f5746a08cfb4501a0d661f012bf8b09407d8f
         <Script src={`${prefix}/mesh.js`}></Script>
         <Script src={`${prefix}/parser.js`}></Script>
         {/* Full screen the game, NO INSTRUCTIONS*/}

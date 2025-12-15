@@ -2,22 +2,11 @@
 import Script from "next/script";
 import Header from "../../components/header";
 
-//testing
-import React, { useState, useRef, useEffect } from 'react';
-import ConnectRequestMessage from '../../../../public/boba/Network/connectRequest.js';
-import GameSession from '../../../../public/boba/gameSession.js';
-import NetworkClient from '../../../../public/boba/networkClient.js';
-import InputManager from '../../../../public/boba/inputManager.js';
-//end testing
+
 
 const prefix = process.env.BASE_PATH || "";
 
 export default function HW10() {
-
-  const eventBus = useRef(createEventBus());
-  const inputManager = useRef(new InputManager());
-  const networkClient = useRef(new NetworkClient());
-  const gameSession = useRef(new GameSession(eventBus.current,networkClient.current,inputManager.current));
  
   //trigger on component mount and unmount
 useEffect(() => {
