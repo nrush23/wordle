@@ -1,6 +1,6 @@
 import NetworkClient from "./networkClient.js";
 import InputManager from "./inputManager.js";
-import {Scene} from "../final/final.js";
+import {Scene} from "../final/renderer.js";
 
 /** @class GameSession class to handle high level game functions such as world building */
 export default class GameSession{
@@ -20,7 +20,7 @@ export default class GameSession{
         this.inputManager = inputManager;
         this.scene = undefined;
         console.log(networkClient);
-        this.networkClient.connect("wss://test.flickshotpro.com/ws");
+        this.networkClient.connect("ws://localhost:3005");
 
         this.networkClient.addEventListener(NetworkClient.EVENTS.CONNECTED,(event)=>{
             this.uuid = event.detail.uuid;
@@ -140,12 +140,4 @@ export default class GameSession{
         this.startTime = now;
         this.onUpdate(deltaTime);
     }
-}
-
-class GameState{
-    players;
-}
-class Player{
-    mesh;
-    position;
 }

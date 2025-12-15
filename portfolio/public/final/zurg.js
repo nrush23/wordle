@@ -32,7 +32,7 @@ class Zurg{
     animate(time){
         const pos = this.body.getPosition(false);
         const velocity = {x: this.target[0] - pos.x, z: this.target[1] - pos.z};
-        const length = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+        var length = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
         length = length == 0 ? 1: length;
         if (length == 0){
             this.setTarget(this.getSpawn());
@@ -53,3 +53,5 @@ class Zurg{
         this.target = position;
     }
 }
+
+console.log("Loaded Zurg.js");

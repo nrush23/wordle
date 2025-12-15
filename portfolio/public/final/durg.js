@@ -8,3 +8,5 @@ class Durg{
 
     }
 }
+
+console.log("Loaded Durg.js");
