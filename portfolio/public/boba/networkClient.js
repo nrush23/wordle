@@ -21,7 +21,8 @@ export default class NetworkClient extends EventTarget{
     static EVENTS ={
         CONNECTED:"connected",
         SNAPSHOT:"snapshot",
-        UUIDS:"uuids"
+        UUIDS:"uuids",
+        GENERIC:"generic"
     };
     static CODES = {
         normal:0
@@ -119,6 +120,12 @@ export default class NetworkClient extends EventTarget{
                             snapshot:packet.snapshot
                         }}));
                         break;
+                    case 11: // generic event message 
+                    console.log(packet);
+                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.GENERIC,{detail:{
+                            event:packet.event,
+                            data:packet.data
+                        }}))
                         break;
                     default:
                         console.warn("[NetworkClient] unknown packet id received "+packet.id);
@@ -182,9 +189,20 @@ export default class NetworkClient extends EventTarget{
             }
         ));
     }
+    
+    sendMessage(event,data){
+        this.transport.send(JSON.stringify(
+            {
+                id:11,
+                event:event,
+                data:data
+            }
+        ));
+    }
     sendChat(chatPacket){
 
     }
+    
     //optional but probably will keep
     getLatency(){
 

@@ -1,9 +1,10 @@
 import NetworkClient from "./networkClient.js";
 import InputManager from "./inputManager.js";
 import {Scene} from "../final/final.js";
+import customEventHandler from "./customEventHandler.js";
 
 /** @class GameSession class to handle high level game functions such as world building */
-export default class GameSession{
+export default class GameSession extends EventTarget{
     eventBus;
     /** @type {NetworkClient} */
     networkClient;
@@ -13,17 +14,28 @@ export default class GameSession{
     uuid;
     /** @type {Scene} */
     scene;
+    /** @type {Mesh} */
+    camera;
+
     /** @param {NetworkClient} networkClient @param {InputManager} inputManager*/
     constructor(eventBus,networkClient,inputManager){
+        super();
+
         this.eventBus = eventBus;
         this.networkClient = networkClient;
         this.inputManager = inputManager;
         this.scene = undefined;
+        this.camera = undefined;
         console.log(networkClient);
         this.networkClient.connect("wss://test.flickshotpro.com/ws");
 
+        this.networkClient.addEventListener(NetworkClient.EVENTS.GENERIC,(event)=>{
+            this.dispatchEvent(new CustomEvent(event.detail.event,{detail:event.detail.data}));
+        });
+
         this.networkClient.addEventListener(NetworkClient.EVENTS.CONNECTED,(event)=>{
             this.uuid = event.detail.uuid;
+            customEventHandler(this);
         });
         
         this.networkClient.addEventListener(NetworkClient.EVENTS.UUIDS,(event)=>{
@@ -32,8 +44,12 @@ export default class GameSession{
         this.modelPool = new Map();
         this.unusedModels = [];
         this.eventBus.on("scene:initialized",(event)=>{
-             const loadDurgModel = event.loadDurgModel;
-                const meshes = event.meshes;
+            
+
+            const loadDurgModel = event.loadDurgModel;
+            const meshes = event.meshes;
+            this.camera = event.camera;
+            
 
                 //fill pool
             for(let i = 0; i < 10;i++){
@@ -64,8 +80,8 @@ export default class GameSession{
                         if(model === undefined){
                             if(this.unusedModels.length > 0){
                                 model = this.unusedModels.pop();
-                                console.log("[GameSession] filling uuid map with " + playerState.clientId);
-                                console.log(model);
+                                //console.log("[GameSession] filling uuid map with " + playerState.clientId);
+                                //console.log(model);
                                 model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
                                 this.modelPool.set(playerState.clientId, model);
                                 
@@ -81,8 +97,8 @@ export default class GameSession{
                             }   
                         }
                         else{
-                            console.log("[GameSession] model with uuid exists "+ playerState.clientId);
-                            console.log(model);
+                            //console.log("[GameSession] model with uuid exists "+ playerState.clientId);
+                            //console.log(model);
                             model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
                         }
 
@@ -111,17 +127,36 @@ export default class GameSession{
     updateWorld(snapshot){
 
     }
+    clientTick = 0;
     onFixedUpdate(tickRate){
 
         //todo: add state for Looping/Updating instead of using NetworkClient state
         if(this.networkClient.state === NetworkClient.STATES.CONNECTED){
-            this.networkClient.sendInputState({
+            //todo: a way client can send to server which zombies get shot
+            //todo: send zombie health
+            //todo: send player health
+            //todo: send player ammo
+            //todo: client running same window logic
+            if(this.camera){
+                this.networkClient.sendInputState({
+                clientTick:this.clientTick,
                 forward:this.inputManager.forward,
                 backward:this.inputManager.backward,
                 left:this.inputManager.left,
-                right:this.inputManager.right
+                right:this.inputManager.right,
+                directionalVectors:this.getDirectionalVectors(this.camera.Q.m)
             });
+            this.clientTick += 1;
+            }
         }
+    }
+    sendMessage(event,data){
+        if(this.networkClient.state === NetworkClient.STATES.CONNECTED){
+            this.networkClient.sendMessage(event,data);
+        }else{
+            console.warn("[GameSession] Can't send message event " + event.toString() + " NetworkClient not in connected state");
+        }
+        
     }
     onUpdate(deltaTime){
 
@@ -140,6 +175,37 @@ export default class GameSession{
         this.startTime = now;
         this.onUpdate(deltaTime);
     }
+    //helper
+    getDirectionalVectors = (matrix)=>{
+      let forward = {
+         x: -matrix[8],
+         y: -matrix[9],
+         z: -matrix[10]
+      };
+      let right = {
+         x: matrix[0],
+         y: matrix[1],
+         z: matrix[2]
+      };
+
+      let up = {
+         x: matrix[4],
+         y: matrix[5],
+         z: matrix[6]
+      };
+      return {
+         forward:forward,
+         right:right,
+         up:up
+      };
+   }
+   lerpVec3(a, b, t) {
+      return {
+         x: a.x + (b.x - a.x) * t,
+         y: a.y + (b.y - a.y) * t,
+         z: a.z + (b.z - a.z) * t
+      };
+   }
 }
 
 class GameState{

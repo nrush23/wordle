@@ -320,6 +320,7 @@ void main() {
       this.gameSession.scene = this; // boba
       this.gameSession.eventBus.emit("scene:initialized",{
          loadDurgModel:this.loadDurgModel,
+         camera:this.C,
          meshes:this.meshes
       });
    }
@@ -339,6 +340,36 @@ void main() {
       M.move(0, 1, 0);
 
       return M;
+   }
+   this.getDirectionalVectors = (matrix)=>{
+      let forward = {
+         x: -matrix[8],
+         y: -matrix[9],
+         z: -matrix[10]
+      };
+      let right = {
+         x: matrix[0],
+         y: matrix[1],
+         z: matrix[2]
+      };
+
+      let up = {
+         x: matrix[4],
+         y: matrix[5],
+         z: matrix[6]
+      };
+      return {
+         forward:forward,
+         right:right,
+         up:up
+      };
+   }
+   function lerpVec3(a, b, t) {
+      return {
+         x: a.x + (b.x - a.x) * t,
+         y: a.y + (b.y - a.y) * t,
+         z: a.z + (b.z - a.z) * t
+      };
    }
    //boba: end
 
