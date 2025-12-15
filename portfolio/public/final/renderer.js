@@ -110,7 +110,7 @@ function Scene(canvas, prefix, gameSession) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['dod_windows'];
+      const FILES = ['dod_windows_sep'];
       const PATH = "/final/models/";
       let MESHES = [];
 

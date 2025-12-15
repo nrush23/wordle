@@ -39,7 +39,4 @@ let Parser = {
         return data;
     },
 
-    async importAllFrom(folder){
-
-    }
 }

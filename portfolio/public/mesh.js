@@ -57,6 +57,7 @@ class Mesh {
     force;
     stride;
     textID = -1;
+    render = true;
 
     children = [];
     constructor(M = new Float32Array([]), triangle_strip = false, implicit = false, stride = 6, textID=-1, COLOR=[1,1,1,1]) {
