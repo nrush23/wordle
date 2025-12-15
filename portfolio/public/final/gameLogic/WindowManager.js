@@ -1,5 +1,5 @@
 const WINDOW_NAMES = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9']; //Window names
-class WindowManager {
+export default class WindowManager {
     WINDOWS = new Map();
     constructor(prefix) {
         this.prefix = prefix;
@@ -13,7 +13,7 @@ class WindowManager {
             for (let BOARD = 0; BOARD < 4; BOARD++) {
                 const NAME = WINDOW + '_' + BOARD + '.ply';
                 let data = await Parser.importMesh(PATH, NAME, true);
-                MESHES[i*4 + BOARD] = new Mesh(data, false, false, 8, i);
+                MESHES[i*4 + BOARD] = new Mesh(data, false, false, 8, 0);
                 this.WINDOWS.set(NAME, MESHES[i*4 + BOARD]);
             }
         }
@@ -36,5 +36,12 @@ class WindowManager {
         } else {
             console.warn("Invalid Window name: %s", name);
         }
+    }
+
+    changeRandomWindow(){
+        const NAME = WINDOW_NAMES[Math.floor(Math.random() * WINDOW_NAMES.length)];
+        const BOARD = Math.floor(Math.random() * 4);
+        const WINDOW = this.WINDOWS.get(NAME + '_' + BOARD + '.ply');
+        WINDOW.render = !WINDOW.render;
     }
 }

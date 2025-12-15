@@ -2,6 +2,7 @@ import NetworkClient from "./networkClient.js";
 import InputManager from "./inputManager.js";
 import customEventHandler from "./customEventHandler.js";
 import { Scene } from "../final/renderer.js";
+import WindowManager from "../final/gameLogic/WindowManager.js";
 
 /** @class GameSession class to handle high level game functions such as world building */
 export default class GameSession extends EventTarget {
@@ -32,7 +33,7 @@ export default class GameSession extends EventTarget {
         this.networkClient.addEventListener(NetworkClient.EVENTS.GENERIC, (event) => {
             this.dispatchEvent(new CustomEvent(event.detail.event, { detail: event.detail.data }));
         });
-        
+
 
         this.networkClient.addEventListener(NetworkClient.EVENTS.CONNECTED, (event) => {
             this.uuid = event.detail.uuid;
@@ -42,7 +43,7 @@ export default class GameSession extends EventTarget {
         this.networkClient.addEventListener(NetworkClient.EVENTS.UUIDS, (event) => {
 
         });
-        
+
         this.modelPool = new Map();
         this.unusedModels = [];
         this.eventBus.on("scene:initialized", (event) => {
@@ -51,6 +52,16 @@ export default class GameSession extends EventTarget {
             const loadDurgModel = event.loadDurgModel;
             const meshes = event.meshes;
             this.camera = event.camera;
+            const WINDOW_MANAGER = new WindowManager();
+            WINDOW_MANAGER.initialize().then((windows) => {
+                meshes.push(...windows);
+                setInterval(() => {
+                    WINDOW_MANAGER.changeRandomWindow();
+                }, 500);
+            }, (error) => {
+
+            });
+
 
 
             //fill pool
@@ -154,51 +165,51 @@ export default class GameSession extends EventTarget {
     }
 
     getDirectionalVectors = (matrix) => {
-    let forward = {
-        x: -matrix[8],
-        y: -matrix[9],
-        z: -matrix[10]
-    };
-    let right = {
-        x: matrix[0],
-        y: matrix[1],
-        z: matrix[2]
-    };
+        let forward = {
+            x: -matrix[8],
+            y: -matrix[9],
+            z: -matrix[10]
+        };
+        let right = {
+            x: matrix[0],
+            y: matrix[1],
+            z: matrix[2]
+        };
 
-    let up = {
-        x: matrix[4],
-        y: matrix[5],
-        z: matrix[6]
-    };
-    return {
-        forward: forward,
-        right: right,
-        up: up
-    };
-}
-sendMessage(event, data){
-    if (this.networkClient.state === NetworkClient.STATES.CONNECTED) {
-        this.networkClient.sendMessage(event, data);
-    } else {
-        console.warn("[GameSession] Can't send message event " + event.toString() + " NetworkClient not in connected state");
+        let up = {
+            x: matrix[4],
+            y: matrix[5],
+            z: matrix[6]
+        };
+        return {
+            forward: forward,
+            right: right,
+            up: up
+        };
     }
+    sendMessage(event, data) {
+        if (this.networkClient.state === NetworkClient.STATES.CONNECTED) {
+            this.networkClient.sendMessage(event, data);
+        } else {
+            console.warn("[GameSession] Can't send message event " + event.toString() + " NetworkClient not in connected state");
+        }
 
-}
-onUpdate(deltaTime){
-
-}
-startTime = Date.now();
-fixedTickAccumulator = 0;
-fixedTickRate = 1000 / 20;
-update(){
-    let now = Date.now();
-    let deltaTime = now - this.startTime;
-    this.fixedTickAccumulator += deltaTime;
-    while (this.fixedTickAccumulator >= this.fixedTickRate) {
-        this.onFixedUpdate(this.fixedTickRate);
-        this.fixedTickAccumulator -= this.fixedTickRate;
     }
-    this.startTime = now;
-    this.onUpdate(deltaTime);
-}
+    onUpdate(deltaTime) {
+
+    }
+    startTime = Date.now();
+    fixedTickAccumulator = 0;
+    fixedTickRate = 1000 / 20;
+    update() {
+        let now = Date.now();
+        let deltaTime = now - this.startTime;
+        this.fixedTickAccumulator += deltaTime;
+        while (this.fixedTickAccumulator >= this.fixedTickRate) {
+            this.onFixedUpdate(this.fixedTickRate);
+            this.fixedTickAccumulator -= this.fixedTickRate;
+        }
+        this.startTime = now;
+        this.onUpdate(deltaTime);
+    }
 }

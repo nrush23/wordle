@@ -12,8 +12,9 @@ const X_MAX = 38.75;
 const Z_MAX = 38.75;
 
 function Scene(canvas, prefix, gameSession) {
+
    this.gameSession = gameSession;
-   
+
    this.yaw = 0;
    this.pitch = 0;
 
@@ -23,7 +24,7 @@ function Scene(canvas, prefix, gameSession) {
    this.YOFF = 0;
    const N = 20;
    this.N = 0;
-   
+
    this.canvas = canvas;
    this.MESHES = [];
 
@@ -116,7 +117,7 @@ function Scene(canvas, prefix, gameSession) {
 
       for (let i = 0; i < FILES.length; i++) {
          let data = await Parser.importMesh(PATH, FILES[i] + '.ply', true);
-         addTexture(i, prefix+'/final/textures/', FILES[i] + '.png');
+         addTexture(i, prefix + '/final/textures/', FILES[i] + '.png');
          MESHES.push(new Mesh(data, false, false, 8, i)); //(Map only needs to be flipped vertically)
          // MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1))); //If color
       }
@@ -249,10 +250,10 @@ void main() {
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
 
       this.gameSession.scene = this; // boba
-      this.gameSession.eventBus.emit("scene:initialized",{
-         loadDurgModel:this.loadDurgModel,
-         camera:this.C,
-         meshes:this.MESHES
+      this.gameSession.eventBus.emit("scene:initialized", {
+         loadDurgModel: this.loadDurgModel,
+         camera: this.C,
+         meshes: this.MESHES
       });
    }
 
@@ -265,14 +266,14 @@ void main() {
 
       let M = new Mesh(data, false, false, 8, 4);
 
-      addTexture(4, prefix+'/hw10/textures/', 'skin1.png');
+      addTexture(4, prefix + '/hw10/textures/', 'skin1.png');
 
 
       M.move(0, 1, 0);
 
       return M;
    }
-   this.getDirectionalVectors = (matrix)=>{
+   this.getDirectionalVectors = (matrix) => {
       let forward = {
          x: -matrix[8],
          y: -matrix[9],
@@ -290,9 +291,9 @@ void main() {
          z: matrix[6]
       };
       return {
-         forward:forward,
-         right:right,
-         up:up
+         forward: forward,
+         right: right,
+         up: up
       };
    }
    function lerpVec3(a, b, t) {
@@ -326,7 +327,7 @@ void main() {
    }]];
 
    this.update = () => {
-      if(this.gameSession !== undefined){
+      if (this.gameSession !== undefined) {
          this.gameSession.update();
       }
       let time = Date.now() / 1000;
@@ -336,7 +337,7 @@ void main() {
       prev = time;
    }
 
-   this.renderSnapshot = (snapshot,uuid)=>{
+   this.renderSnapshot = (snapshot, uuid) => {
 
    };
 
@@ -368,7 +369,7 @@ void main() {
 
          if (this.LEFT) {
             x += -V.x;
-         } 
+         }
          if (this.RIGHT) {
             x += V.x;
          }
@@ -376,7 +377,7 @@ void main() {
 
          if (this.UP) {
             y += V.y;
-         } 
+         }
          if (this.DOWN) {
             y += -V.y;
          }
@@ -389,7 +390,7 @@ void main() {
          }
          if (this.RISE === 'DOWN') {
             z += -V.z;
-         } 
+         }
          if (this.RISE === 'UP') {
             z += V.z;
          }
@@ -409,6 +410,9 @@ void main() {
       const N = this.MESHES.length;
       for (let i = 0; i < N; i++) {
          let mesh = this.MESHES[i];
+         if (!mesh.render) {
+            continue;
+         }
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);
          }
