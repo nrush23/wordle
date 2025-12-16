@@ -3,6 +3,7 @@ export default class WindowManager {
     WINDOWS = new Map();
     constructor(prefix) {
         this.prefix = prefix;
+        this.initialized = false;
     }
 
     async initialize() {
@@ -43,5 +44,130 @@ export default class WindowManager {
         const BOARD = Math.floor(Math.random() * 4);
         const WINDOW = this.WINDOWS.get(NAME + '_' + BOARD + '.ply');
         WINDOW.render = !WINDOW.render;
+        console.log(NAME + '_' + BOARD + '.ply');
+    }
+    changeWindow(index){
+        const NAME = WINDOW_NAMES[index];
+        for(let i = 0 ; i < 4;i++){
+            const BOARD = this.WINDOWS.get(NAME + '_' + i + '.ply');
+            BOARD.render = !BOARD.render;
+        }
+    }
+    renderWindowSnapshot(windowSnapshot) {
+        if (!this.initialized) return;
+
+        if(!this.WINDOWS.size == 36) return;
+
+        for (let i = 0; i < windowSnapshot.length; i++) {
+            let snapshot = windowSnapshot[i];
+            let windowId = snapshot.windowId;
+            let health = snapshot.health;
+            
+            
+            
+            if (health <= 100 && health > 75){
+                let name = WINDOW_NAMES[windowId];
+                for (let i = 0; i < 4; i++) {
+                    let BOARD = this.WINDOWS.get(name + '_' + i + '.ply');
+                    BOARD.render = true;
+                }
+            }
+            else if (health<=75 && health >50){
+                let name = WINDOW_NAMES[windowId];
+                for (let i = 0; i < 4; i++) {
+                    let BOARD = this.WINDOWS.get(name + '_' + i + '.ply');
+                    if(i<1){
+                        BOARD.render = false
+                    }
+                    else{
+                        BOARD.render = true;
+                    }
+                }
+            }
+            else if (health<=50 && health >25){
+                let name = WINDOW_NAMES[windowId];
+                for (let i = 0; i < 4; i++) {
+                    let BOARD = this.WINDOWS.get(name + '_' + i + '.ply');
+                    if(i<2){
+                        BOARD.render = false
+                    }
+                    else{
+                        BOARD.render = true;
+                    }
+                }
+            }
+            else if (health<=25 && health >0){
+                let name = WINDOW_NAMES[windowId];
+                for (let i = 0; i < 4; i++) {
+                    let BOARD = this.WINDOWS.get(name + '_' + i + '.ply');
+                    if(i<3){
+                        BOARD.render = false
+                    }
+                    else{
+                        BOARD.render = true;
+                    }
+                }
+            }
+            else if (health == 0) {
+                let name = WINDOW_NAMES[windowId];
+                for (let i = 0; i < 4; i++) {
+                    let BOARD = this.WINDOWS.get(name + '_' + i + '.ply');
+                    BOARD.render = false;
+                }
+            }
+        }
+        
+
+
     }
 }
+/*
+if (health <= 100 && health > 75) {
+    for (let i = 0; i < 4; i++) {
+        const BOARD = this.WINDOWS.get(NAME + '_' + i + '.ply');
+        BOARD.render = true;
+    }
+}
+else if (health <= 75 && health > 50) {
+    for (let i = 0; i < 4; i++) {
+        const BOARD = this.WINDOWS.get(NAME + '_' + i + '.ply');
+        if (i < 1) {
+            BOARD.render = false;
+        }
+        else {
+
+            BOARD.render = true;
+        }
+    }
+}
+else if (health <= 50 && health > 25) {
+    for (let i = 0; i < 4; i++) {
+        const BOARD = this.WINDOWS.get(NAME + '_' + i + '.ply');
+        if (i < 2) {
+            BOARD.render = false;
+        }
+        else {
+
+            BOARD.render = true;
+        }
+    }
+}
+else if (health <= 25 && health > 0) {
+    for (let i = 0; i < 4; i++) {
+        const BOARD = this.WINDOWS.get(NAME + '_' + i + '.ply');
+        if (i < 3) {
+            BOARD.render = false;
+        }
+        else {
+
+            BOARD.render = true;
+        }
+    }
+}
+else {
+    for (let i = 0; i < 4; i++) {
+        const BOARD = this.WINDOWS.get(NAME + '_' + i + '.ply');
+        BOARD.render = false;
+    }
+}
+    */

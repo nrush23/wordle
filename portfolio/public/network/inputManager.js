@@ -12,6 +12,11 @@ export default class InputManager{
         this.backward = false;
         this.jump = false;
 
+        this.arrowKeyUp = false;
+        this.arrowKeyDown = false;
+        this.arrowKeyLeft = false;
+        this.arrowKeyRight = false;
+
         this.onKeyDownBound = this.onKeyDown.bind(this);
         this.onKeyUpBound = this.onKeyUp.bind(this);
         this.onMouseDownBound = this.onMouseDown.bind(this);
@@ -48,6 +53,18 @@ export default class InputManager{
             case " ":
                 this.jump = true;
                 break;
+            case "ArrowUp":
+                this.arrowKeyUp = true;
+                break;
+            case "ArrowDown":
+                this.arrowKeyDown = true;
+                break;
+            case "ArrowLeft":
+                this.arrowKeyLeft = true;
+                break;
+            case "ArrowRight":
+                this.arrowKeyRight = true;
+                break;
         }
     }
     onKeyUp(event) {
@@ -67,6 +84,18 @@ export default class InputManager{
                 break;
             case " ":
                 this.jump = false;
+                break;
+            case "ArrowUp":
+                this.arrowKeyUp = false;
+                break;
+            case "ArrowDown":
+                this.arrowKeyDown = false;
+                break;
+            case "ArrowLeft":
+                this.arrowKeyLeft = false;
+                break;
+            case "ArrowRight":
+                this.arrowKeyRight = false;
                 break;
         }
     }

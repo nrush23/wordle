@@ -27,7 +27,21 @@ let mesh = {
    ])
 };
 function gl_start(canvas, scene) {
-   setTimeout(function () {
+     //react compatability data
+     let timeoutId = null;
+     let tickIntervalId = null;
+     let disposed = false;
+
+     const listeners = [];
+     const addListener = (target, type, handler, opts) => {
+          target.addEventListener(type, handler, opts);
+          listeners.push(() => target.removeEventListener(type, handler, opts));
+     };
+
+     // keep track of set timeout incase of mounting and unmounting
+   timeoutId = setTimeout(function () {
+     if (disposed) return; // in case react component unmounted
+
       canvas.gl = canvas.getContext('webgl2');
       canvas.setShaders = function (vertexShader, fragmentShader) {
          gl = this.gl;

@@ -1,7 +1,7 @@
 const SPAWN = [[10,10], [5,5]]; //List of Zombie spawns (will be set with Blender)
 
 
-class Zurg{
+export default class Zurg{
     health;
     target;
     id;
@@ -9,7 +9,6 @@ class Zurg{
     constructor(id){
         this.health = 20;
         this.id = id;
-        this.body = this.makeBody();
     }
 
     async makeBody(target=[4,4]){
@@ -20,7 +19,7 @@ class Zurg{
         let M = new Mesh(data, false, false, 8, 4);
 
         const spawn = this.getSpawn();
-        M.move(spawn[0],1,spawn[1]);
+        M.move(5,1,1 );
 
         this.setTarget(target);
 

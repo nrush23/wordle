@@ -36,7 +36,6 @@ export default function Final() {
       <main className="flex flex-col flex-1 w-full items-center">
         <div className="text-center font-semibold">Durg&apos;s Durgers: The Final</div>
         <canvas style={{outline: 'none'}}id="glcanvas" tabIndex={0} className="bg-[rgb(224,224,224)] w-full flex-1"/>
-<<<<<<< HEAD
         <div
           className="absolute"
           style={{
@@ -49,10 +48,7 @@ export default function Final() {
             pointerEvents: "none", // so it never interferes with input
           }}
         />
-        <Script src={`${prefix}/final/final.js`}></Script>
-=======
         <Script src={`${prefix}/final/renderer.js`}></Script>
->>>>>>> d06f5746a08cfb4501a0d661f012bf8b09407d8f
         <Script src={`${prefix}/mesh.js`}></Script>
         <Script src={`${prefix}/parser.js`}></Script>
         {/* Full screen the game, NO INSTRUCTIONS*/}
