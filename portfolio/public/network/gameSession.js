@@ -6,37 +6,37 @@ import WindowManager from "../final/gameLogic/WindowManager.js";
 import Zurg from "../final/gameLogic/zurg.js";
 
 class Vector3 {
-  constructor(x, y, z) {
-    this.x = x ?? 0;
-    this.y = y ?? 0;
-    this.z = z ?? 0;
-  }
-  static distance(a, b) {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const dz = b.z - a.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-  static moveTowards(start, goal, maxDistance) {
-    const dx = goal.x - start.x;
-    const dy = goal.y - start.y;
-    const dz = goal.z - start.z;
-
-    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-    // If already at the goal or within range, return goal
-    if (distance === 0 || distance <= maxDistance) {
-      return { x: goal.x, y: goal.y, z: goal.z };
+    constructor(x, y, z) {
+        this.x = x ?? 0;
+        this.y = y ?? 0;
+        this.z = z ?? 0;
     }
+    static distance(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dz = b.z - a.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    static moveTowards(start, goal, maxDistance) {
+        const dx = goal.x - start.x;
+        const dy = goal.y - start.y;
+        const dz = goal.z - start.z;
 
-    const t = maxDistance / distance;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    return {
-      x: start.x + dx * t,
-      y: start.y + dy * t,
-      z: start.z + dz * t
-    };
-  }
+        // If already at the goal or within range, return goal
+        if (distance === 0 || distance <= maxDistance) {
+            return { x: goal.x, y: goal.y, z: goal.z };
+        }
+
+        const t = maxDistance / distance;
+
+        return {
+            x: start.x + dx * t,
+            y: start.y + dy * t,
+            z: start.z + dz * t
+        };
+    }
 }
 /** @class GameSession class to handle high level game functions such as world building */
 export default class GameSession extends EventTarget {
@@ -74,6 +74,9 @@ export default class GameSession extends EventTarget {
         this.zurgModels = [];
         this._connectedOnce = false;
         this._shootBound = false;
+
+        this._rebuildBound = false;
+
         this.positionBuffer = [];
         this.positionBufferIndex = 0;
         //load zurg and durg functions
@@ -85,28 +88,53 @@ export default class GameSession extends EventTarget {
         this.windowHealth = [75, 50, 25, 75, 100, 0, 0, 0, 0];
 
         this.MESHES = undefined;
-        this._onShoot = () => { 
+        this._onShoot = () => {
             console.log("shooting");
-            if(!this.MESHES){
+            if (!this.MESHES) {
                 return;
             }
-            let directions = this.getDirectionalVectors(this.camera.Q.m); 
-            let result = raycastMeshesAABBAllHits(this.camera.getPosition(), directions.forward, 1000, this.MESHES); 
-            console.log(result); 
-            if (result.length > 0) { 
-                result.forEach((value) => { 
-                    if (value.mesh.metadata) { 
-                        this.eventBus.emit("game:hit", { name: value.mesh.name }); 
-                        if (value.mesh.metadata.zid) { 
+            let directions = this.getDirectionalVectors(this.camera.Q.m);
+            let result = raycastMeshesAABBAllHits(this.camera.getPosition(), directions.forward, 1000, this.MESHES);
+            console.log(result);
+            if (result.length > 0) {
+                result.forEach((value) => {
+                    if (value.mesh.metadata) {
+                        this.eventBus.emit("game:hit", { name: value.mesh.name });
+                        if (value.mesh.metadata.zid) {
                             console.log("hit zombie");
                             //value.mesh.render = false; 
-                            this.sendMessage("shoot", { zid: value.mesh.metadata.zid }); 
-                        } 
-                        
-                    } 
-                }); 
-            } 
+                            this.sendMessage("shoot", { zid: value.mesh.metadata.zid });
+                        }
+
+                    }
+                });
+            }
         };
+
+        this._onRebuild = (event) => {
+            console.log(event.detail.message);
+
+            if (!this.windowManager.BOXES){
+                return;
+            }
+            let directions = this.getDirectionalVectors(this.camera.Q.m);
+            directions.forward.y = 0;
+            let result = raycastMeshesAABBAllHits(this.camera.getPosition(false), directions.forward, 1000, this.windowManager.BOXES);
+            // console.log("Rebuild Results: ", result);
+            if (result.length > 0) {
+                result.forEach((value) => {
+                    if (value.mesh.metadata) {
+                        // this.eventBus.emit("game:hit", { name: value.mesh.name });
+                        console.log(value.mesh.metadata);
+                        if (value.mesh.metadata.wid) {
+                            console.log("hit window: " + value.mesh.metadata.wid);
+                            //value.mesh.render = false; 
+                            this.sendMessage("rebuild", { wid: value.mesh.metadata.wid });
+                        }
+                    }
+                });
+            }
+        }
         const onGeneric = (event) => {
             this.dispatchEvent(new CustomEvent(event.detail.event, { detail: event.detail.data }));
         };
@@ -114,187 +142,146 @@ export default class GameSession extends EventTarget {
             this.uuid = event.detail.uuid;
             customEventHandler(this);
         };
-        const onUUIDS = (event) =>{};
+        const onUUIDS = (event) => { };
         const onSnapshot = (event) => {
-                // if disposed
-                if (this._disposed) return;
-                //make sure scene exists first
-                if(!this.scene){
-                    return;
-                }
-            
-                let snapshot = event.detail.snapshot;
-                let playerSnapshot = snapshot.playerSnapshot;
-                let zurgSnapshot = snapshot.zurgSnapshot;
-                let windowSnapshot = snapshot.windowSnapshot;
+            // if disposed
+            if (this._disposed) return;
+            //make sure scene exists first
+            if (!this.scene) {
+                return;
+            }
 
-                //console.log(windowSnapshot);
-                if (this.scene) {
-                    let currentUUIDs = [...this.modelPool.keys()];
+            let snapshot = event.detail.snapshot;
+            let playerSnapshot = snapshot.playerSnapshot;
+            let zurgSnapshot = snapshot.zurgSnapshot;
+            let windowSnapshot = snapshot.windowSnapshot;
 
-                    for (let i = 0; i < playerSnapshot.length; i++) {
-                        let playerState = playerSnapshot[i];
-                        if (playerState.clientId === this.uuid) {
-                            this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-                            
-                            
-                        } else {
-                            //case brand new uuid
-                            let model = this.modelPool.get(playerState.clientId);
+            //console.log(windowSnapshot);
+            if (this.scene) {
+                let currentUUIDs = [...this.modelPool.keys()];
 
-                            if (model === undefined) {
-                                if (this.unusedModels.length > 0) {
-                                    model = this.unusedModels.pop();
-                                    //console.log("[GameSession] filling uuid map with " + playerState.clientId);
-                                    //console.log(model);
-                                    model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-                                    this.modelPool.set(playerState.clientId, model);
+                for (let i = 0; i < playerSnapshot.length; i++) {
+                    let playerState = playerSnapshot[i];
+                    if (playerState.clientId === this.uuid) {
+                        this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
 
-                                }
-                                else {
-                                    if (this.MESHES) {
-                                        //load a new mesh in then re render on the next snapshot
-                                        this.loadDurgModel().then((mesh) => {
-                                            if (this._disposed) return;
-                                            this.MESHES.push(mesh);
-                                            this.unusedModels.push(mesh);
-                                        }, (error) => {
-                                            console.log(error);
-                                        });
-                                    }
-                                }
-                            }
-                            else {
-                                //console.log("[GameSession] model with uuid exists "+ playerState.clientId);
+
+                    } else {
+                        //case brand new uuid
+                        let model = this.modelPool.get(playerState.clientId);
+
+                        if (model === undefined) {
+                            if (this.unusedModels.length > 0) {
+                                model = this.unusedModels.pop();
+                                //console.log("[GameSession] filling uuid map with " + playerState.clientId);
                                 //console.log(model);
                                 model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-                            }
+                                this.modelPool.set(playerState.clientId, model);
 
-                            //remove index from current indexes since if it exists;
-                            const index = currentUUIDs.indexOf(playerState.clientId);
-                            if (index !== -1) {
-                                currentUUIDs.splice(index, 1);
+                            }
+                            else {
+                                if (this.MESHES) {
+                                    //load a new mesh in then re render on the next snapshot
+                                    this.loadDurgModel().then((mesh) => {
+                                        if (this._disposed) return;
+                                        this.MESHES.push(mesh);
+                                        this.unusedModels.push(mesh);
+                                    }, (error) => {
+                                        console.log(error);
+                                    });
+                                }
                             }
                         }
-                    }
-                    //if any uuids that existed before but are not in snapshot repurpose their models
-                    if (currentUUIDs.length !== 0) {
-                        for (let i = 0; i < currentUUIDs.length; i++) {
-                            let model = this.modelPool.get(currentUUIDs[i]);
-                            model.setPosition(0, -5, 0);
-                            this.unusedModels.push(model);
-                            this.modelPool.delete(currentUUIDs[i]);
+                        else {
+                            //console.log("[GameSession] model with uuid exists "+ playerState.clientId);
+                            //console.log(model);
+                            model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
+                        }
+
+                        //remove index from current indexes since if it exists;
+                        const index = currentUUIDs.indexOf(playerState.clientId);
+                        if (index !== -1) {
+                            currentUUIDs.splice(index, 1);
                         }
                     }
+                }
+                //if any uuids that existed before but are not in snapshot repurpose their models
+                if (currentUUIDs.length !== 0) {
+                    for (let i = 0; i < currentUUIDs.length; i++) {
+                        let model = this.modelPool.get(currentUUIDs[i]);
+                        model.setPosition(0, -5, 0);
+                        this.unusedModels.push(model);
+                        this.modelPool.delete(currentUUIDs[i]);
+                    }
+                }
 
-                    //render zurg snapshot
-                    for (let i = 0; i < zurgSnapshot.length; i++) {
-                        let snapshot = zurgSnapshot[i];
-                        let zurgModel = this.zurgModels[snapshot.zid];
-                        if (zurgModel) {
-                            zurgModel.metadata.health = snapshot.health;
-                            //console.log(zurgModel.metadata);
+                //render zurg snapshot
+                for (let i = 0; i < zurgSnapshot.length; i++) {
+                    let snapshot = zurgSnapshot[i];
+                    let zurgModel = this.zurgModels[snapshot.zid];
+                    if (zurgModel) {
+                        zurgModel.metadata.health = snapshot.health;
+                        //console.log(zurgModel.metadata);
 
-                            let currentPosition = zurgModel.getPosition();
-                            let targetPosition = snapshot.targetPosition;
+                        let currentPosition = zurgModel.getPosition();
+                        let targetPosition = snapshot.targetPosition;
 
-                            let direction = {
-                                x: targetPosition.x - currentPosition.x,
-                                z: targetPosition.z - currentPosition.z,
-                                y: 0
-                            };
+                        let direction = {
+                            x: targetPosition.x - currentPosition.x,
+                            z: targetPosition.z - currentPosition.z,
+                            y: 0
+                        };
 
-                            let angle = (Math.atan2(direction.x, direction.z) * (180 / Math.PI));// radians
-                            zurgModel.clearRotation();
-                            zurgModel.turnY(-Math.atan2(direction.x, direction.z));
+                        let angle = (Math.atan2(direction.x, direction.z) * (180 / Math.PI));// radians
+                        zurgModel.clearRotation();
+                        zurgModel.turnY(-Math.atan2(direction.x, direction.z));
 
-                            zurgModel.setPosition(snapshot.position.x, snapshot.position.y, snapshot.position.z);
-                            
-                            
+                        zurgModel.setPosition(snapshot.position.x, snapshot.position.y, snapshot.position.z);
+
+
+
+                    }
+                }
+
+                for (let i = 0; i < windowSnapshot.length; i++) {
+                    let snapshot = windowSnapshot[i];
+                    this.windowHealth[snapshot.windowId] = snapshot.health;
+                    //console.log(`[GameSession][${this._sessionId}] received window snapshot`);
+                    if (this.windows.length > 0) {
+                        if (snapshot.windowId == 5) {
 
                         }
-                    }
-
-                    for (let i = 0; i < windowSnapshot.length; i++) {
-                        let snapshot = windowSnapshot[i];
-                        this.windowHealth[snapshot.windowId] = snapshot.health;
-                        //console.log(`[GameSession][${this._sessionId}] received window snapshot`);
-                        if (this.windows.length > 0) {
-                            //this.windows[0].boards[0].render = !this.windows[0].boards[0].render;
-                            //this.windows[0].boards[1].render = !this.windows[0].boards[1].render;
-                            //this.windows[0].boards[2].render = !this.windows[0].boards[2].render;
-                            //this.windows[0].boards[3].render = !this.windows[0].boards[3].render;
-
-                            //this.windows[1].boards[0].render = !this.windows[1].boards[0].render;
-                            //this.windows[1].boards[1].render = !this.windows[1].boards[1].render;
-                            //this.windows[1].boards[2].render = !this.windows[1].boards[2].render;
-                            //this.windows[1].boards[3].render = !this.windows[1].boards[3].render;
-
-                            //this.windows[2].boards[0].render = !this.windows[2].boards[0].render;
-                            //this.windows[2].boards[1].render = !this.windows[2].boards[1].render;
-                            //this.windows[2].boards[2].render = !this.windows[2].boards[2].render;
-                            //this.windows[2].boards[3].render = !this.windows[2].boards[3].render;
-
-                            //this.windows[3].boards[0].render = !this.windows[3].boards[0].render;
-                            //this.windows[3].boards[1].render = !this.windows[3].boards[1].render;
-                            //this.windows[3].boards[2].render = !this.windows[3].boards[2].render;
-                            //this.windows[3].boards[3].render = !this.windows[3].boards[3].render;
-                            if(snapshot.windowId == 5){
-                                
-                            }
-                            //this.windows[snapshot.windowId].boards[0].render = !this.windows[snapshot.windowId].boards[0].render;
-                            //this.windows[snapshot.windowId].boards[1].render = !this.windows[snapshot.windowId].boards[1].render;
-                            //this.windows[snapshot.windowId].boards[2].render = !this.windows[snapshot.windowId].boards[2].render;
-                            //this.windows[snapshot.windowId].boards[3].render = !this.windows[snapshot.windowId].boards[3].render;
-                            //console.log(`[GameSession][${this._sessionId}] blinking windows`);
-                            //console.log(this.windows[1]);
-                            //console.log(`[GameSession][${this._sessionId}]`);
-
-                            let health = snapshot.health;
-
-                            if(health>= 100){ 
-                                //console.log("window full");
+                        let health = snapshot.health;
+                        switch (health) {
+                            case 75:
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                break;
+                            case 50:
+                                this.windows[snapshot.windowId].boards[1].render = false;
+                                break;
+                            case 25:
+                                this.windows[snapshot.windowId].boards[2].render = false;
+                                break;
+                            case 0:
+                                this.windows[snapshot.windowId].boards[3].render = false;
+                                break;
+                            case 100:
                                 this.windows[snapshot.windowId].boards[0].render = true;
                                 this.windows[snapshot.windowId].boards[1].render = true;
                                 this.windows[snapshot.windowId].boards[2].render = true;
                                 this.windows[snapshot.windowId].boards[3].render = true;
-                            }
-                            else if(health <100 && health >75){
-                                //console.log("window 3/4");
-                                this.windows[snapshot.windowId].boards[0].render = false;
-                                this.windows[snapshot.windowId].boards[1].render = true;
-                                this.windows[snapshot.windowId].boards[2].render = true;
-                                this.windows[snapshot.windowId].boards[3].render = true;
-
-                            }
-                            else if(health <=75 && health >50){
-                                //console.log("window 2/4");
-                                this.windows[snapshot.windowId].boards[0].render = false;
-                                this.windows[snapshot.windowId].boards[1].render = false;
-                                this.windows[snapshot.windowId].boards[2].render = true;
-                                this.windows[snapshot.windowId].boards[3].render = true;
-                            }
-                            else if(health <=50 && health >25){
-                                //console.log("window 1/4");
-                                this.windows[snapshot.windowId].boards[0].render = false;
-                                this.windows[snapshot.windowId].boards[1].render = false;
-                                this.windows[snapshot.windowId].boards[2].render = false;
-                                this.windows[snapshot.windowId].boards[3].render = true;
-                            }
-                            else{
-                                this.windows[snapshot.windowId].boards[0].render = false;
-                                this.windows[snapshot.windowId].boards[1].render = false;
-                                this.windows[snapshot.windowId].boards[2].render = false;
-                                this.windows[snapshot.windowId].boards[3].render = false;
-                            }
+                                break;
+                            default:
+                                break;
                         }
                     }
                 }
-            };
+            }
+        };
 
-        
 
-        
+
+
 
         this.networkClient.addEventListener(NetworkClient.EVENTS.GENERIC, onGeneric);
         this._netHandlers.push([NetworkClient.EVENTS.GENERIC, onGeneric]);
@@ -306,8 +293,8 @@ export default class GameSession extends EventTarget {
         this._netHandlers.push([NetworkClient.EVENTS.UUIDS, onUUIDS]);
 
         this.networkClient.addEventListener(NetworkClient.EVENTS.SNAPSHOT, onSnapshot);
-            this._netHandlers.push([NetworkClient.EVENTS.SNAPSHOT, onSnapshot]);
-        
+        this._netHandlers.push([NetworkClient.EVENTS.SNAPSHOT, onSnapshot]);
+
         const onSceneInitialized = (event) => {
             //check if disposed
             if (this._disposed) return;
@@ -331,7 +318,7 @@ export default class GameSession extends EventTarget {
                 meshes.push(TEST_ZURG.body);
             }, (error) => { });
 
-            
+
             this.windowManager.initialize().then((boards) => {
                 if (this._disposed) return;
                 console.log(` ${this._sessionId} gameSession window manager initialized`);
@@ -384,7 +371,7 @@ export default class GameSession extends EventTarget {
                 });
             }
 
-            
+
 
             //hook up shoot event, then connect
             if (!this._shootBound) {
@@ -392,21 +379,26 @@ export default class GameSession extends EventTarget {
                 this._shootBound = true;
             }
 
+            if(!this._rebuildBound){
+                this.addEventListener("rebuild", this._onRebuild);
+                this._rebuildBound = true;
+            }
+
             //after scene is initialized, connect to server to start receiving game state
-            if (!this._connectedOnce && 
+            if (!this._connectedOnce &&
                 this.networkClient.state !== NetworkClient.STATES.CONNECTED &&
                 this.networkClient.state !== NetworkClient.STATES.CONNECTING) {
 
-                
 
-                this.networkClient.connect("wss://test.flickshotpro.com/ws");
+
+                this.networkClient.connect("ws://localhost:3005");
                 this._connectedOnce = true;
-                
+
             }
         };
-        
 
-        
+
+
         const unsubScene = this.eventBus.on("scene:initialized", onSceneInitialized);
         this._unsubs.push(unsubScene);
     }
@@ -415,8 +407,8 @@ export default class GameSession extends EventTarget {
         this._disposed = true;
 
         //remove shoot listener
-        if (this._onShoot){
-            this.removeEventListener('shoot',this._onShoot);
+        if (this._onShoot) {
+            this.removeEventListener('shoot', this._onShoot);
             this._onShoot = null;
         }
 
@@ -448,20 +440,20 @@ export default class GameSession extends EventTarget {
         this._onShootBound = false;
         this.positionBuffer = [];
         this.positionBufferIndex = 0;
-        
+
     }
     updateWorld(snapshot) {
 
     }
     onFixedUpdate(tickRate) {
 
-        //todo: add state for Looping/Updating instead of using NetworkClient state
+        //TODO: add state for Looping/Updating instead of using NetworkClient state
         if (this.networkClient.state === NetworkClient.STATES.CONNECTED) {
-            //todo: a way client can send to server which zombies get shot
-            //todo: send zombie health
-            //todo: send player health
-            //todo: send player ammo
-            //todo: client running same window logic
+            //TODO: a way client can send to server which zombies get shot
+            //TODO: send zombie health
+            //TODO: send player health
+            //TODO: send player ammo
+            //TODO: client running same window logic
 
             if (this.camera) {
                 let inputState = {
@@ -504,36 +496,36 @@ export default class GameSession extends EventTarget {
     }
 
     //helper
-    getDirectionalVectors = (matrix)=>{
-      let forward = {
-         x: -matrix[8],
-         y: -matrix[9],
-         z: -matrix[10]
-      };
-      let right = {
-         x: matrix[0],
-         y: matrix[1],
-         z: matrix[2]
-      };
+    getDirectionalVectors = (matrix) => {
+        let forward = {
+            x: -matrix[8],
+            y: -matrix[9],
+            z: -matrix[10]
+        };
+        let right = {
+            x: matrix[0],
+            y: matrix[1],
+            z: matrix[2]
+        };
 
-      let up = {
-         x: matrix[4],
-         y: matrix[5],
-         z: matrix[6]
-      };
-      return {
-         forward:forward,
-         right:right,
-         up:up
-      };
-   }
-   lerpVec3(a, b, t) {
-      return {
-         x: a.x + (b.x - a.x) * t,
-         y: a.y + (b.y - a.y) * t,
-         z: a.z + (b.z - a.z) * t
-      };
-   }
+        let up = {
+            x: matrix[4],
+            y: matrix[5],
+            z: matrix[6]
+        };
+        return {
+            forward: forward,
+            right: right,
+            up: up
+        };
+    }
+    lerpVec3(a, b, t) {
+        return {
+            x: a.x + (b.x - a.x) * t,
+            y: a.y + (b.y - a.y) * t,
+            z: a.z + (b.z - a.z) * t
+        };
+    }
 }
 //BB = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 }, z: { min: 0, max: 0 } };
 function getAABB(body) {
@@ -568,7 +560,7 @@ function raycastMeshesAABBAllHits(origin, direction, length, meshes) {
     for (let i = 0; i < meshes.length; i++) {
         const box = getAABB(meshes[i]);         // <-- uses your getAABB
         const t = rayIntersectsAABB(origin, dir, length, box);
-        if (t !== null) hits.push({ index: i, distance: t, mesh:meshes[i] });
+        if (t !== null) hits.push({ index: i, distance: t, mesh: meshes[i] });
     }
 
     hits.sort((a, b) => a.distance - b.distance);

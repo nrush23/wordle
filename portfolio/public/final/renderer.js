@@ -117,8 +117,10 @@ function Scene(canvas, prefix, gameSession) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['dod_windows_sep'];
+      const FILES = ['final_map'];
       const PATH = "/final/models/";
+
+      const SPAWNS = ['sp1', 'sp2', 'sp3', 'sp4', 'sp5', 'sp6', 'sp7'];
       let MESHES = [];
 
       for (let i = 0; i < FILES.length; i++) {
@@ -126,6 +128,14 @@ function Scene(canvas, prefix, gameSession) {
          addTexture(i, prefix + '/final/textures/', FILES[i] + '.png');
          MESHES.push(new Mesh(data, false, false, 8, i)); //(Map only needs to be flipped vertically)
          // MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1))); //If color
+      }
+
+      //Add in spawns temporarily
+      for(let i = 0; i < SPAWNS.length; i++){
+         let data = await Parser.importMesh(PATH + '/spawns/', SPAWNS[i] + '.ply', true);
+         MESHES.push(new Mesh(data, false, false, 8, -1, rgb(0,255,0,1)));
+         const position = MESHES[MESHES.length-1].getPosition(false);
+         console.log("Loaded %s.ply: (%s, %s, %s)", SPAWNS[i], position.x, position.y, position.z);
       }
 
       return MESHES;
