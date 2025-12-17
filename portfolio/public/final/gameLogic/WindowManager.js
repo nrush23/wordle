@@ -11,7 +11,7 @@ export default class WindowManager {
     async initialize() {
         //Import the windows
         const PATH = '/final/models/windows/';
-        const MESHES = new Array(WINDOW_NAMES.length * 4 + BOX_NAMES.length);
+        const MESHES = new Array(WINDOW_NAMES.length * 4);
         for (let i = 0; i < WINDOW_NAMES.length; i++) {
             const WINDOW = WINDOW_NAMES[i];
             for (let BOARD = 0; BOARD < 4; BOARD++) {
@@ -22,6 +22,8 @@ export default class WindowManager {
                 this.WINDOWS.set(NAME, MESHES[index]);
             }
         }
+
+        
         const BOX_PATH = '/final/models/window_boxes/';
         const index = WINDOW_NAMES.length * 4;
         //Import the window boxes
@@ -29,12 +31,12 @@ export default class WindowManager {
             const NAME = BOX_NAMES[i];
             let data = await Parser.importMesh(BOX_PATH, NAME + '.ply', true);
             let box = new Mesh(data, false, false, 8, -1);
-            box.metadata = {wid: i+1};
+            box.metadata = {wid: i};
             box.name = "w" + i+1;
             // box.render = false;
-            MESHES[index + i] = box;
+            // MESHES[index + i] = box; //FOR DEBUGGING
             this.BOXES[i] = box;
-            console.log(MESHES[index + i]);
+            // console.log(this.BOXES[i]);
         }
         return MESHES;
     }

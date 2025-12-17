@@ -117,22 +117,22 @@ export default class GameSession extends EventTarget {
             if (!this.windowManager.BOXES){
                 return;
             }
-            let directions = this.getDirectionalVectors(this.camera.Q.m);
-            directions.forward.y = 0;
-            let result = raycastMeshesAABBAllHits(this.camera.getPosition(false), directions.forward, 1000, this.windowManager.BOXES);
-            // console.log("Rebuild Results: ", result);
-            if (result.length > 0) {
-                result.forEach((value) => {
-                    if (value.mesh.metadata) {
-                        // this.eventBus.emit("game:hit", { name: value.mesh.name });
-                        console.log(value.mesh.metadata);
-                        if (value.mesh.metadata.wid) {
-                            console.log("hit window: " + value.mesh.metadata.wid);
-                            //value.mesh.render = false; 
-                            this.sendMessage("rebuild", { wid: value.mesh.metadata.wid });
-                        }
-                    }
-                });
+            //CHECK DISTANCE FROM EACH WINDOW
+            var min_dist = Number.POSITIVE_INFINITY;
+            var wid = -1;
+            this.windowManager.BOXES.forEach(box =>{
+                const box_pos = box.getPosition(false);
+                const cam_pos = this.camera.getPosition(false);
+                const pos = {x: box_pos.x - cam_pos.x,  y: box_pos.y - cam_pos.y,  z: box_pos.z - cam_pos.z};
+                const dist = Math.hypot(pos.x, pos.y, pos.z);
+                if(min_dist > dist){
+                    wid = box.metadata.wid;
+                    min_dist = dist;
+                }
+            });
+            if(min_dist <=5 ){
+                console.log("Hit w%s: %s", wid, min_dist);
+                this.sendMessage("rebuild", {wid: wid});
             }
         }
         const onGeneric = (event) => {
