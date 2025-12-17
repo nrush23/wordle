@@ -69,7 +69,7 @@ export default function Final() {
       <Header></Header>
       <main className="flex flex-col flex-1 w-full items-center">
         <div className="text-center font-semibold">Durg&apos;s Durgers: The Final</div>
-        <canvas style={{outline: 'none'}}id="glcanvas" tabIndex={0} className="bg-[rgb(224,224,224)] w-full flex-1"/>
+        <canvas style={{outline: 'none'}}id="glcanvas" tabIndex={0} className="bg-[rgb(74,74,72)] w-full flex-1"/>
         <div
           className="absolute"
           style={{
