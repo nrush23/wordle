@@ -88,23 +88,45 @@ function gl_start(canvas, scene) {
      //     vertexAttribute('aNor', 3, 3);
       }
       canvas.setShaders(scene.vertexShader, scene.fragmentShader);
-      setInterval(function () {
+
+      //keep track of render loop interval
+      tickIntervalId = setInterval(function () {
+          if(disposed) return; // don't render if disposed
+
          if (scene.update)
             scene.update([0, 0, 7]);
          if (autodraw)
             drawMesh(mesh);
       }, 30);
+
       if (scene.initialize) { scene.initialize(); }
-      if (scene.events) {
-         scene.events.forEach(evt => {
-            if (evt.length == 2) {
-               canvas.addEventListener(evt[0], evt[1]);
-            } else {
-               window.addEventListener(evt[0], evt[1]);
-            }
-         });
+        if (scene.events) {
+             scene.events.forEach((evt) => {
+                  const [type, handler] = evt;
+                  // your convention: length==2 => canvas, else window
+                  if (evt.length == 2) addListener(canvas, type, handler);
+                  else addListener(window, type, handler);
+             });
       }
    }, 100);
+
+     // return dispose function
+     return () => {
+          disposed = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          if (tickIntervalId) clearInterval(tickIntervalId);
+
+          // remove listeners
+          for (const off of listeners) off();
+
+          // tell the scene to clean itself up (intervals, eventbus, etc.)
+          if (scene?.dispose) scene.dispose();
+
+          // optional: release pointer lock if held
+          if (document.pointerLockElement === canvas) document.exitPointerLock();
+
+          // canvas.gl = null; // maybe need to trigger faster dispose
+     };
 }
 
 let vertexMap = map => {

@@ -14,6 +14,11 @@ const Z_MAX = 38.75;
 
 function Scene(canvas, prefix, gameSession) {
 
+   //dispose tracking
+   this._intervalIds = [];
+   this._disposed = false;
+   this._unsubs = [];
+
    this.gameSession = gameSession;
 
    this.yaw = 0;
@@ -215,7 +220,16 @@ void main() {
       let rangeInv = 1.0 / (near - far);
       return new Matrix([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (near + far) * rangeInv, -1, 0, 0, near * far * rangeInv * 2, 0]);
    }
+   this.dispose = () => {
+      if (this._disposed) return;
+      this._disposed = true;
 
+      for (const id of this._intervalIds) clearInterval(id);
+      this._intervalIds.length = 0;
+
+      for (const u of this._unsubs) { try { u(); } catch { } }
+      this._unsubs.length = 0;
+   };
    this.initialize = async () => {
       vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
 
@@ -226,7 +240,9 @@ void main() {
          this.MESHES.push(mesh);
       })
 
-      setInterval(() => {
+      const id = setInterval(() => {
+         //if scene disposed don't render
+         if (this._disposed) return;
          this.N++;
          if (this.N > N) {
             this.N = 0;
@@ -237,6 +253,7 @@ void main() {
          this.YOFF = row * -.23;
          setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
       }, 500);
+      this._intervalIds.push(id);
 
       let P = persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 200);
       setUniform('Matrix4fv', 'uMP', false, P.m);
@@ -250,12 +267,13 @@ void main() {
       this.C.move(0, 2, 3);
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
 
-      this.gameSession.scene = this; // boba
+      
       this.gameSession.eventBus.emit("scene:initialized", {
          loadDurgModel: this.loadDurgModel,
          loadZurgModel: this.loadZurgModel,
          camera: this.C,
-         meshes: this.MESHES
+         meshes: this.MESHES,
+         scene:this
       });
 
       this.testCube = new Cube(true);
@@ -270,17 +288,18 @@ void main() {
             id:index-1
          };
       }
-      this.gameSession.eventBus.on("game:hit",(event)=>{
+      let hitUnsubscribe = this.gameSession.eventBus.on("game:hit",(event)=>{
          console.log('a target was hit');
          for(let i=this.MESHES.length-1;i>-1;i--){
             if(this.MESHES[i].name){
                if(this.MESHES[i].name === event.name){
-                  this.MESHES.splice(i,1);
-                  i=-1;
+                  //this.MESHES.splice(i,1);
+                  //i=-1;
                }
             }
          }
       });
+      this._unsubs.push(hitUnsubscribe);
 
       
 
@@ -291,8 +310,18 @@ void main() {
       //this.testCube.setParent(this.C);
       //this.MESHES.push(this.testCube);
 
-      this.loadM1Garrand().then((mesh)=>{this.MESHES.push(mesh)},(error)=>{console.log(error)});
-      this.loadThompson().then((mesh)=>{this.MESHES.push(mesh)},(error)=>{console.log(error)});
+      this.loadM1Garrand().then((mesh)=>{
+         this.MESHES.push(mesh);
+         mesh.turnY(180 * Math.PI/180);
+         mesh.setPosition(.3,1.5,-1.8);
+         mesh.setParent(this.C);
+         
+
+      },(error)=>{console.log(error)});
+      this.loadThompson().then((mesh)=>{
+         this.MESHES.push(mesh);
+         
+      },(error)=>{console.log(error)});
       this.loadRifle().then((mesh)=>{this.MESHES.push(mesh)},(error)=>{console.log(error)});
    }
 
@@ -349,7 +378,7 @@ void main() {
 
       M.move(3, 1, 0);
 
-
+      
       //debug to outline bounding box
       //let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
       //this.MESHES.push(boundingBox);
@@ -367,6 +396,7 @@ void main() {
 
       M.move(4, 1, 0);
 
+      
 
       //debug to outline bounding box
       //let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
@@ -562,6 +592,7 @@ void main() {
          if (!mesh.render) {
             continue;
          }
+         
          if (mesh.animate) {
             mesh.animate(Date.now() / 1000);
          }
@@ -579,3 +610,24 @@ void main() {
 }
 
 console.log("final.js loaded");
+
+/** test code for a look at function on the y axis
+ * if (mesh.name) {
+            if (mesh.name == "test_zurg") {
+               let currentPosition = mesh.getPosition();
+               let targetPosition = this.C.getPosition();
+
+               let direction = {
+                  x: targetPosition.x - currentPosition.x,
+                  z: targetPosition.z - currentPosition.z,
+                  y: 0
+               };
+
+               let angle = (Math.atan2(direction.x, direction.z) * (180 / Math.PI));// radians
+               console.log(angle);
+               mesh.clearRotation();
+               //mesh.turnY(90 * (Math.PI/180));
+               mesh.turnY(-Math.atan2(direction.x, direction.z));
+            }
+         }
+ */

@@ -59,116 +59,70 @@ export default class GameSession extends EventTarget {
         super();
         this._sessionId = Math.random().toString(16).slice(2);
 
+        this._disposed = false;
+        this._unsubs = [];
+        this._netHandlers = [];
+
         this.eventBus = eventBus;
         this.networkClient = networkClient;
         this.inputManager = inputManager;
         this.inputManager.gameShell = this;
         this.scene = undefined;
         this.camera = undefined;
-        console.log(networkClient);
-        this.networkClient.connect("wss://test.flickshotpro.com/ws");
-
-        this.networkClient.addEventListener(NetworkClient.EVENTS.GENERIC, (event) => {
-            this.dispatchEvent(new CustomEvent(event.detail.event, { detail: event.detail.data }));
-        });
-
-
-        this.networkClient.addEventListener(NetworkClient.EVENTS.CONNECTED, (event) => {
-            this.uuid = event.detail.uuid;
-            customEventHandler(this);
-        });
-
-        this.networkClient.addEventListener(NetworkClient.EVENTS.UUIDS, (event) => {
-
-        });
-
         this.modelPool = new Map();
         this.unusedModels = [];
         this.zurgModels = [];
-        this.eventBus.on("scene:initialized", (event) => {
-            console.log(` ${this._sessionId} gameSession id initialized`);
-            
+        this._connectedOnce = false;
+        this._shootBound = false;
+        this.positionBuffer = [];
+        this.positionBufferIndex = 0;
+        //load zurg and durg functions
+        this.loadDurgModel = undefined;
+        this.loadZurgModel = undefined;
 
-            const loadDurgModel = event.loadDurgModel;
-            const loadZurgModel = event.loadZurgModel;
-            const meshes = event.meshes;
-            this.camera = event.camera;
+        this.windowManager = new WindowManager();
+        this.windows = [];
+        this.windowHealth = [75, 50, 25, 75, 100, 0, 0, 0, 0];
 
-            const TEST_ZURG = new Zurg(1);
-            TEST_ZURG.makeBody().then(()=>{
-                meshes.push(TEST_ZURG.body);
-            },(error)=>{});
-
-            this.windowManager = new WindowManager();
-            this.windows = [];
-            this.windowHealth = [75,50,25,75, 100,0,0,0,0];
-            this.windowManager.initialize().then((boards) => {
-                console.log(` ${this._sessionId} gameSession window manager initialized`);
-                for(let i =0;i<boards.length/4;i++){
-                    this.windows.push({
-                        boards:[
-                            boards[(i*4) +0 ],
-                            boards[(i*4) +1 ],
-                            boards[(i*4) +2 ],
-                            boards[(i*4) +3 ]
-                        ]
-                    });
-                }
-                console.log(this.windows);
-                this.windowManager.initialized = true;
-
-                
-
-            }, (error) => {
-                console.log(error);
-            });
-            
-            //fill zurg pool
-            const MAX_ZURGS = 15;
-            for (let i = 0;i<MAX_ZURGS;i++){
-                loadZurgModel().then((mesh)=>{
-                    meshes.push(mesh);
-                    this.zurgModels.push(mesh);
-                    mesh.name = "zurg" + i;
-                    mesh.metadata = {
-                        zid:i,
-                        health:-1
-                    };
-                },(error)=>{console.log(error)});
+        this.MESHES = undefined;
+        this._onShoot = () => { 
+            console.log("shooting");
+            if(!this.MESHES){
+                return;
             }
-
-            //fill pool
-            for (let i = 0; i < 10; i++) {
-                loadDurgModel().then((mesh) => {
-                    mesh.setPosition(0, -5, 0);
-                    meshes.push(mesh);
-                    let index = this.unusedModels.push(mesh);
-                    console.log(`[GameSession][${this._sessionId}] generated new durg`);
-                    console.log(this.unusedModels[index - 1]);
-                }, (error) => {
-                    console.log(error);
-                });
-            }
-
-            //hook up shoot event
-            this.addEventListener("shoot", () => {
-                let directions = this.getDirectionalVectors(this.camera.Q.m);
-                let result = raycastMeshesAABBAllHits(this.camera.getPosition(), directions.forward, 1000, meshes);
-                console.log(result);
-                if(result.length>0){
-                    result.forEach((value)=>{
-                        if(value.mesh.metadata){
-                            this.eventBus.emit("game:hit",{name:value.mesh.name});
-                            if(value.mesh.metadata.zid){
-                                //value.mesh.render = false;
-                            }
-                            this.sendMessage("shoot",{zid:value.mesh.metadata.zid});
-                        }
-                    });
+            let directions = this.getDirectionalVectors(this.camera.Q.m); 
+            let result = raycastMeshesAABBAllHits(this.camera.getPosition(), directions.forward, 1000, this.MESHES); 
+            console.log(result); 
+            if (result.length > 0) { 
+                result.forEach((value) => { 
+                    if (value.mesh.metadata) { 
+                        this.eventBus.emit("game:hit", { name: value.mesh.name }); 
+                        if (value.mesh.metadata.zid) { 
+                            console.log("hit zombie");
+                            //value.mesh.render = false; 
+                            this.sendMessage("shoot", { zid: value.mesh.metadata.zid }); 
+                        } 
+                        
+                    } 
+                }); 
+            } 
+        };
+        const onGeneric = (event) => {
+            this.dispatchEvent(new CustomEvent(event.detail.event, { detail: event.detail.data }));
+        };
+        const onConnected = (event) => {
+            this.uuid = event.detail.uuid;
+            customEventHandler(this);
+        };
+        const onUUIDS = (event) =>{};
+        const onSnapshot = (event) => {
+                // if disposed
+                if (this._disposed) return;
+                //make sure scene exists first
+                if(!this.scene){
+                    return;
                 }
-            });
-
-            this.networkClient.addEventListener(NetworkClient.EVENTS.SNAPSHOT, (event) => {
+            
                 let snapshot = event.detail.snapshot;
                 let playerSnapshot = snapshot.playerSnapshot;
                 let zurgSnapshot = snapshot.zurgSnapshot;
@@ -182,8 +136,8 @@ export default class GameSession extends EventTarget {
                         let playerState = playerSnapshot[i];
                         if (playerState.clientId === this.uuid) {
                             this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-                            //console.log(playerState.health);
-                            //console.log(playerState.position);
+                            
+                            
                         } else {
                             //case brand new uuid
                             let model = this.modelPool.get(playerState.clientId);
@@ -198,13 +152,16 @@ export default class GameSession extends EventTarget {
 
                                 }
                                 else {
-                                    //load a new mesh in then re render on the next snapshot
-                                    loadDurgModel().then((mesh) => {
-                                        meshes.push(mesh);
-                                        this.unusedModels.push(mesh);
-                                    }, (error) => {
-                                        console.log(error);
-                                    });
+                                    if (this.MESHES) {
+                                        //load a new mesh in then re render on the next snapshot
+                                        this.loadDurgModel().then((mesh) => {
+                                            if (this._disposed) return;
+                                            this.MESHES.push(mesh);
+                                            this.unusedModels.push(mesh);
+                                        }, (error) => {
+                                            console.log(error);
+                                        });
+                                    }
                                 }
                             }
                             else {
@@ -231,36 +188,267 @@ export default class GameSession extends EventTarget {
                     }
 
                     //render zurg snapshot
-                    for(let i = 0 ; i < zurgSnapshot.length;i++){
+                    for (let i = 0; i < zurgSnapshot.length; i++) {
                         let snapshot = zurgSnapshot[i];
                         let zurgModel = this.zurgModels[snapshot.zid];
-                        if (zurgModel){
+                        if (zurgModel) {
                             zurgModel.metadata.health = snapshot.health;
                             //console.log(zurgModel.metadata);
-                            zurgModel.setPosition(snapshot.position.x,snapshot.position.y,snapshot.position.z);
+
+                            let currentPosition = zurgModel.getPosition();
+                            let targetPosition = snapshot.targetPosition;
+
+                            let direction = {
+                                x: targetPosition.x - currentPosition.x,
+                                z: targetPosition.z - currentPosition.z,
+                                y: 0
+                            };
+
+                            let angle = (Math.atan2(direction.x, direction.z) * (180 / Math.PI));// radians
+                            zurgModel.clearRotation();
+                            zurgModel.turnY(-Math.atan2(direction.x, direction.z));
+
+                            zurgModel.setPosition(snapshot.position.x, snapshot.position.y, snapshot.position.z);
+                            
+                            
+
                         }
                     }
 
-                    for(let i = 0; i<windowSnapshot.length;i++){
+                    for (let i = 0; i < windowSnapshot.length; i++) {
                         let snapshot = windowSnapshot[i];
                         this.windowHealth[snapshot.windowId] = snapshot.health;
-
-                        //just for fun disable windows 2
+                        //console.log(`[GameSession][${this._sessionId}] received window snapshot`);
                         if (this.windows.length > 0) {
-                            this.windows[1].boards[0].render = !this.windows[1].boards[0].render;
-                            this.windows[1].boards[1].render = !this.windows[1].boards[1].render;
-                            this.windows[1].boards[2].render = !this.windows[1].boards[2].render;
-                            this.windows[1].boards[3].render = !this.windows[1].boards[3].render;
-                            console.log(`[GameSession][${this._sessionId}] blinking windows`);
-                            console.log(this.windows[1]);
-                            console.log(`[GameSession][${this._sessionId}]`);
+                            //this.windows[0].boards[0].render = !this.windows[0].boards[0].render;
+                            //this.windows[0].boards[1].render = !this.windows[0].boards[1].render;
+                            //this.windows[0].boards[2].render = !this.windows[0].boards[2].render;
+                            //this.windows[0].boards[3].render = !this.windows[0].boards[3].render;
+
+                            //this.windows[1].boards[0].render = !this.windows[1].boards[0].render;
+                            //this.windows[1].boards[1].render = !this.windows[1].boards[1].render;
+                            //this.windows[1].boards[2].render = !this.windows[1].boards[2].render;
+                            //this.windows[1].boards[3].render = !this.windows[1].boards[3].render;
+
+                            //this.windows[2].boards[0].render = !this.windows[2].boards[0].render;
+                            //this.windows[2].boards[1].render = !this.windows[2].boards[1].render;
+                            //this.windows[2].boards[2].render = !this.windows[2].boards[2].render;
+                            //this.windows[2].boards[3].render = !this.windows[2].boards[3].render;
+
+                            //this.windows[3].boards[0].render = !this.windows[3].boards[0].render;
+                            //this.windows[3].boards[1].render = !this.windows[3].boards[1].render;
+                            //this.windows[3].boards[2].render = !this.windows[3].boards[2].render;
+                            //this.windows[3].boards[3].render = !this.windows[3].boards[3].render;
+                            if(snapshot.windowId == 5){
+                                
+                            }
+                            //this.windows[snapshot.windowId].boards[0].render = !this.windows[snapshot.windowId].boards[0].render;
+                            //this.windows[snapshot.windowId].boards[1].render = !this.windows[snapshot.windowId].boards[1].render;
+                            //this.windows[snapshot.windowId].boards[2].render = !this.windows[snapshot.windowId].boards[2].render;
+                            //this.windows[snapshot.windowId].boards[3].render = !this.windows[snapshot.windowId].boards[3].render;
+                            //console.log(`[GameSession][${this._sessionId}] blinking windows`);
+                            //console.log(this.windows[1]);
+                            //console.log(`[GameSession][${this._sessionId}]`);
+
+                            let health = snapshot.health;
+
+                            if(health>= 100){ 
+                                //console.log("window full");
+                                this.windows[snapshot.windowId].boards[0].render = true;
+                                this.windows[snapshot.windowId].boards[1].render = true;
+                                this.windows[snapshot.windowId].boards[2].render = true;
+                                this.windows[snapshot.windowId].boards[3].render = true;
+                            }
+                            else if(health <100 && health >75){
+                                //console.log("window 3/4");
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = true;
+                                this.windows[snapshot.windowId].boards[2].render = true;
+                                this.windows[snapshot.windowId].boards[3].render = true;
+
+                            }
+                            else if(health <=75 && health >50){
+                                //console.log("window 2/4");
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = false;
+                                this.windows[snapshot.windowId].boards[2].render = true;
+                                this.windows[snapshot.windowId].boards[3].render = true;
+                            }
+                            else if(health <=50 && health >25){
+                                //console.log("window 1/4");
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = false;
+                                this.windows[snapshot.windowId].boards[2].render = false;
+                                this.windows[snapshot.windowId].boards[3].render = true;
+                            }
+                            else{
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = false;
+                                this.windows[snapshot.windowId].boards[2].render = false;
+                                this.windows[snapshot.windowId].boards[3].render = false;
+                            }
                         }
                     }
                 }
+            };
+
+        
+
+        
+
+        this.networkClient.addEventListener(NetworkClient.EVENTS.GENERIC, onGeneric);
+        this._netHandlers.push([NetworkClient.EVENTS.GENERIC, onGeneric]);
+
+        this.networkClient.addEventListener(NetworkClient.EVENTS.CONNECTED, onConnected);
+        this._netHandlers.push([NetworkClient.EVENTS.CONNECTED, onConnected]);
+
+        this.networkClient.addEventListener(NetworkClient.EVENTS.UUIDS, onUUIDS);
+        this._netHandlers.push([NetworkClient.EVENTS.UUIDS, onUUIDS]);
+
+        this.networkClient.addEventListener(NetworkClient.EVENTS.SNAPSHOT, onSnapshot);
+            this._netHandlers.push([NetworkClient.EVENTS.SNAPSHOT, onSnapshot]);
+        
+        const onSceneInitialized = (event) => {
+            //check if disposed
+            if (this._disposed) return;
+
+            console.log(` ${this._sessionId} gameSession id initialized`);
+
+
+            this.loadDurgModel = event.loadDurgModel;
+            this.loadZurgModel = event.loadZurgModel;
+            this.MESHES = event.meshes;
+            this.scene = event.scene;
+
+            const meshes = event.meshes;
+            this.camera = event.camera;
+
+            const TEST_ZURG = new Zurg(1);
+            TEST_ZURG.makeBody().then(() => {
+                if (this._disposed) return;
+
+                TEST_ZURG.body.name = "test_zurg";
+                meshes.push(TEST_ZURG.body);
+            }, (error) => { });
+
+            
+            this.windowManager.initialize().then((boards) => {
+                if (this._disposed) return;
+                console.log(` ${this._sessionId} gameSession window manager initialized`);
+                for (let i = 0; i < boards.length / 4; i++) {
+                    this.windows.push({
+                        boards: [
+                            boards[(i * 4) + 0],
+                            boards[(i * 4) + 1],
+                            boards[(i * 4) + 2],
+                            boards[(i * 4) + 3]
+                        ]
+                    });
+                }
+                for (let i = 0; i < boards.length; i++) {
+                    meshes.push(boards[i]);
+                }
+                this.windowManager.initialized = true;
+
+
+            }, (error) => {
+                console.log(error);
             });
 
+            //fill zurg pool
+            const MAX_ZURGS = 15;
+            for (let i = 0; i < MAX_ZURGS; i++) {
+                this.loadZurgModel().then((mesh) => {
+                    if (this._disposed) return;
+                    meshes.push(mesh);
+                    this.zurgModels.push(mesh);
+                    mesh.name = "zurg" + i;
+                    mesh.metadata = {
+                        zid: i,
+                        health: -1
+                    };
+                }, (error) => { console.log(error) });
+            }
 
-        });
+            //fill pool
+            for (let i = 0; i < 10; i++) {
+                this.loadDurgModel().then((mesh) => {
+                    if (this._disposed) return;
+                    mesh.setPosition(0, -5, 0);
+                    meshes.push(mesh);
+                    let index = this.unusedModels.push(mesh);
+                    //console.log(`[GameSession][${this._sessionId}] generated new durg`);
+                    console.log(this.unusedModels[index - 1]);
+                }, (error) => {
+                    console.log(error);
+                });
+            }
+
+            
+
+            //hook up shoot event, then connect
+            if (!this._shootBound) {
+                this.addEventListener("shoot", this._onShoot);
+                this._shootBound = true;
+            }
+
+            //after scene is initialized, connect to server to start receiving game state
+            if (!this._connectedOnce && 
+                this.networkClient.state !== NetworkClient.STATES.CONNECTED &&
+                this.networkClient.state !== NetworkClient.STATES.CONNECTING) {
+
+                
+
+                this.networkClient.connect("wss://test.flickshotpro.com/ws");
+                this._connectedOnce = true;
+                
+            }
+        };
+        
+
+        
+        const unsubScene = this.eventBus.on("scene:initialized", onSceneInitialized);
+        this._unsubs.push(unsubScene);
+    }
+    dispose() {
+        if (this._disposed) return;
+        this._disposed = true;
+
+        //remove shoot listener
+        if (this._onShoot){
+            this.removeEventListener('shoot',this._onShoot);
+            this._onShoot = null;
+        }
+
+        // remove game event listeners
+        for (const unsub of this._unsubs) { try { unsub(); } catch { } }
+
+        // remove network listeners
+        for (const [type, fn] of this._netHandlers) {
+            try { this.networkClient.removeEventListener(type, fn); } catch { }
+        }
+
+        // disconnect socket
+        try { this.networkClient.disconnect?.(); } catch { }
+        try { this.networkClient.close?.(); } catch { }
+
+        // drop references for GC
+        this.scene = undefined;
+        this.camera = undefined;
+        this.modelPool?.clear?.();
+        this.unusedModels = [];
+        this.zurgModels = [];
+        this.windows = [];
+        this.MESHES = null;
+        this.windowManager = null;
+        this.loadDurgModel = undefined;
+        this.loadZurgModel = undefined;
+        this._netHandlers = [];
+        this._unsubs = [];
+        this._onShootBound = false;
+        this.positionBuffer = [];
+        this.positionBufferIndex = 0;
+        
     }
     updateWorld(snapshot) {
 
@@ -299,7 +487,6 @@ export default class GameSession extends EventTarget {
 
     }
     onUpdate(deltaTime) {
-
     }
     startTime = Date.now();
     fixedTickAccumulator = 0;
