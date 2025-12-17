@@ -271,6 +271,10 @@ void main() {
       this.gameSession.eventBus.emit("scene:initialized", {
          loadDurgModel: this.loadDurgModel,
          loadZurgModel: this.loadZurgModel,
+         loadM1Garrand: this.loadM1Garrand,
+         loadThompson: this.loadThompson,
+         loadRifle: this.loadRifle,
+
          camera: this.C,
          meshes: this.MESHES,
          scene:this

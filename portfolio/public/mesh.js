@@ -313,6 +313,56 @@ class Mesh {
     importFrom(text_dump) {
 
     }
+
+    //testing extra helper functions
+    getRotationRadians(world = false) {
+        const m = world ? this.getWorldMatrix() : this.Q.m;
+
+        // column vectors (remove scale)
+        let x0 = m[0], x1 = m[1], x2 = m[2];
+        let y0 = m[4], y1 = m[5], y2 = m[6];
+        let z0 = m[8], z1 = m[9], z2 = m[10];
+
+        const sx = Math.hypot(x0, x1, x2) || 1;
+        const sy = Math.hypot(y0, y1, y2) || 1;
+        const sz = Math.hypot(z0, z1, z2) || 1;
+
+        x0 /= sx; x1 /= sx; x2 /= sx;
+        y0 /= sy; y1 /= sy; y2 /= sy;
+        z0 /= sz; z1 /= sz; z2 /= sz;
+
+        // Euler XYZ extraction
+        let rx, ry, rz;
+
+        ry = Math.asin(-x2);
+        const cy = Math.cos(ry);
+
+        if (Math.abs(cy) > 1e-6) {
+            rx = Math.atan2(y2, z2);
+            rz = Math.atan2(x1, x0);
+        } else {
+            // gimbal lock
+            rx = Math.atan2(-z1, y1);
+            rz = 0;
+        }
+
+        return { x: rx, y: ry, z: rz }; // radians
+    };
+    setRotationRadians(x = 0, y = 0, z = 0) {
+        const cx = Math.cos(x), sx = Math.sin(x);
+        const cy = Math.cos(y), sy = Math.sin(y);
+        const cz = Math.cos(z), sz = Math.sin(z);
+
+        // R = Rz * Ry * Rx
+        this.R = new Matrix([
+            cy * cz, cy * sz, -sy, 0,
+            sx * sy * cz - cx * sz, sx * sy * sz + cx * cz, sx * cy, 0,
+            cx * sy * cz + sx * sz, cx * sy * sz - sx * cz, cx * cy, 0,
+            0, 0, 0, 1
+        ]);
+
+        this.bake();
+    };
 }
 
 class Cube extends Mesh {
