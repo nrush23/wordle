@@ -148,13 +148,13 @@ export default class GameSession extends EventTarget{
     clientTick = 0;
     onFixedUpdate(tickRate){
 
-        //todo: add state for Looping/Updating instead of using NetworkClient state
+        //TODO: add state for Looping/Updating instead of using NetworkClient state
         if(this.networkClient.state === NetworkClient.STATES.CONNECTED){
-            //todo: a way client can send to server which zombies get shot
-            //todo: send zombie health
-            //todo: send player health
-            //todo: send player ammo
-            //todo: client running same window logic
+            //TODO: a way client can send to server which zombies get shot
+            //TODO: send zombie health
+            //TODO: send player health
+            //TODO: send player ammo
+            //TODO: client running same window logic
             if(this.camera){
                 this.networkClient.sendInputState({
                 clientTick:this.clientTick,

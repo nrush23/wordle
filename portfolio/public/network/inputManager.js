@@ -4,6 +4,7 @@ export default class InputManager{
     left;
     right;
     jump;
+    rebuild;
     constructor(){
         this.gameShell = undefined;
         this.left = false;
@@ -16,6 +17,8 @@ export default class InputManager{
         this.arrowKeyDown = false;
         this.arrowKeyLeft = false;
         this.arrowKeyRight = false;
+
+        this.rebuild = false;
 
         this.onKeyDownBound = this.onKeyDown.bind(this);
         this.onKeyUpBound = this.onKeyUp.bind(this);
@@ -65,6 +68,10 @@ export default class InputManager{
             case "ArrowRight":
                 this.arrowKeyRight = true;
                 break;
+            case "e":
+                this.rebuild = true;
+                this.gameShell.dispatchEvent(new CustomEvent("rebuild", {detail:{message:"rebuild pressed"}}));
+                break;
         }
     }
     onKeyUp(event) {
@@ -96,6 +103,9 @@ export default class InputManager{
                 break;
             case "ArrowRight":
                 this.arrowKeyRight = false;
+                break;
+            case "e":
+                this.rebuild = false;
                 break;
         }
     }
