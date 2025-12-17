@@ -71,6 +71,7 @@ export default class GameSession extends EventTarget {
         this.camera = undefined;
         this.modelPool = new Map();
         this.unusedModels = [];
+        this.gunPool = [];
         this.zurgModels = [];
         this._connectedOnce = false;
         this._shootBound = false;
@@ -79,6 +80,9 @@ export default class GameSession extends EventTarget {
 
         this.positionBuffer = [];
         this.positionBufferIndex = 0;
+        this.inputMap = new Map();
+        this.inputBuffer = [];
+
         //load zurg and durg functions
         this.loadDurgModel = undefined;
         this.loadZurgModel = undefined;
@@ -150,23 +154,30 @@ export default class GameSession extends EventTarget {
             if (!this.scene) {
                 return;
             }
-
-            let snapshot = event.detail.snapshot;
+                let snapshot = event.detail.snapshot;
             let playerSnapshot = snapshot.playerSnapshot;
             let zurgSnapshot = snapshot.zurgSnapshot;
             let windowSnapshot = snapshot.windowSnapshot;
+                //console.log(windowSnapshot);
+                if (this.scene) {
+                    
 
-            //console.log(windowSnapshot);
-            if (this.scene) {
-                let currentUUIDs = [...this.modelPool.keys()];
+                    let currentUUIDs = [...this.modelPool.keys()];
+                    
+                    for (let i = 0; i < playerSnapshot.length; i++) {
+                        let playerState = playerSnapshot[i];
+                        if (playerState.clientId === this.uuid) {
+                            this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
+                            if (this.inputBuffer.length == 0) {
+                                this.inputBuffer.push({
+                                    inputState: null,
+                                    startPosition: new Vector3(playerState.position.x, playerState.position.y, playerState.position.z),
+                                    targetPosition: new Vector3(playerState.position.x, playerState.position.y, playerState.position.z)
+                                });
+                            }
 
-                for (let i = 0; i < playerSnapshot.length; i++) {
-                    let playerState = playerSnapshot[i];
-                    if (playerState.clientId === this.uuid) {
-                        this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-
-
-                    } else {
+                        } 
+                        else {
                         //case brand new uuid
                         let model = this.modelPool.get(playerState.clientId);
 
@@ -175,9 +186,10 @@ export default class GameSession extends EventTarget {
                                 model = this.unusedModels.pop();
                                 //console.log("[GameSession] filling uuid map with " + playerState.clientId);
                                 //console.log(model);
+                                //model.setRotationRadians(playerState.rotation.x, playerState.rotation.y, playerState.rotation.z);
+                                model.setRotationRadians(playerState.rotation.x, playerState.rotation.y, playerState.rotation.z);
                                 model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
                                 this.modelPool.set(playerState.clientId, model);
-
                             }
                             else {
                                 if (this.MESHES) {
@@ -192,24 +204,41 @@ export default class GameSession extends EventTarget {
                                 }
                             }
                         }
-                        else {
-                            //console.log("[GameSession] model with uuid exists "+ playerState.clientId);
-                            //console.log(model);
+                        else{
+                            model.setRotationRadians(playerState.rotation.x, playerState.rotation.y, playerState.rotation.z);
                             model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
+                            if(model.metadata){
+                                    if(!model.metadata.armed){
+                                        if(this.gunPool.length > 0){
+                                            model.metadata.gunModel = this.gunPool.pop();
+                                            model.metadata.gunModel.setPosition(0, 1, 0);
+                                            model.metadata.gunModel.setParent(model);
+                                            model.metadata.armed = true;
+                                        }
+                                    }
+                                }
                         }
-
-                        //remove index from current indexes since if it exists;
-                        const index = currentUUIDs.indexOf(playerState.clientId);
-                        if (index !== -1) {
-                            currentUUIDs.splice(index, 1);
-                        }
+                            //remove index from current indexes since if it exists;
+                            const index = currentUUIDs.indexOf(playerState.clientId);
+                            if (index !== -1) {
+                                currentUUIDs.splice(index, 1);
+                            }
                     }
+
                 }
                 //if any uuids that existed before but are not in snapshot repurpose their models
                 if (currentUUIDs.length !== 0) {
                     for (let i = 0; i < currentUUIDs.length; i++) {
                         let model = this.modelPool.get(currentUUIDs[i]);
                         model.setPosition(0, -5, 0);
+                        if (model.metadata) {
+                            model.metadata.armed = false;
+                            if (model.metadata.gunModel) {
+                                model.metadata.gunModel.parent = null;
+                                model.metadata.gunModel.setPosition(0, -10, 0);
+                                this.gunPool.push(model.metadata.gunModel);
+                            }
+                        }
                         this.unusedModels.push(model);
                         this.modelPool.delete(currentUUIDs[i]);
                     }
@@ -316,19 +345,30 @@ export default class GameSession extends EventTarget {
 
             this.loadDurgModel = event.loadDurgModel;
             this.loadZurgModel = event.loadZurgModel;
+
+            this.loadM1Garrand = event.loadM1Garrand;
+            this.loadThompson = event.loadThompson;
+            this.loadRifle = event.loadRifle;
+
             this.MESHES = event.meshes;
             this.scene = event.scene;
 
             const meshes = event.meshes;
             this.camera = event.camera;
 
-            const TEST_ZURG = new Zurg(1);
+            /*const TEST_ZURG = new Zurg(1);
             TEST_ZURG.makeBody().then(() => {
                 if (this._disposed) return;
 
                 TEST_ZURG.body.name = "test_zurg";
+
+                console.log(TEST_ZURG.body.getRotationRadians());
+                TEST_ZURG.body.setRotationRadians(0,90 * (Math.PI/180),0);
+                console.log(TEST_ZURG.body.getRotationRadians());
+
                 meshes.push(TEST_ZURG.body);
-            }, (error) => { });
+
+            }, (error) => { });*/
 
 
             this.windowManager.initialize().then((boards) => {
@@ -359,13 +399,13 @@ export default class GameSession extends EventTarget {
             for (let i = 0; i < MAX_ZURGS; i++) {
                 this.loadZurgModel().then((mesh) => {
                     if (this._disposed) return;
-                    meshes.push(mesh);
                     this.zurgModels.push(mesh);
                     mesh.name = "zurg" + i;
                     mesh.metadata = {
                         zid: i,
                         health: -1
                     };
+                    meshes.push(mesh);
                 }, (error) => { console.log(error) });
             }
 
@@ -373,7 +413,16 @@ export default class GameSession extends EventTarget {
             for (let i = 0; i < 10; i++) {
                 this.loadDurgModel().then((mesh) => {
                     if (this._disposed) return;
+
+                    let camCube = new Cube();
+                    camCube.scale(.5,.5,.5);
+                    camCube.setPosition(0,0,0);
+                    camCube.setParent(mesh);
                     mesh.setPosition(0, -5, 0);
+                    mesh.metadata = {
+                        armed:false,
+                        gunModel:null
+                    };
                     meshes.push(mesh);
                     let index = this.unusedModels.push(mesh);
                     //console.log(`[GameSession][${this._sessionId}] generated new durg`);
@@ -383,7 +432,17 @@ export default class GameSession extends EventTarget {
                 });
             }
 
-
+            for(let i =0;i<10;i++){
+                this.loadM1Garrand().then((m1Mesh) => {
+                    if (this._disposed) return;
+                    m1Mesh.turnY(180 * Math.PI / 180);
+                    //m1Mesh.setPosition(.3, 1.5, -1.8);
+                    m1Mesh.setPosition(-50 + (10*i), -20, 0);
+                    //m1Mesh.setParent(camCube);
+                    meshes.push(m1Mesh);
+                    this.gunPool.push(m1Mesh);
+                });
+            }
 
             //hook up shoot event, then connect
             if (!this._shootBound) {
@@ -452,10 +511,50 @@ export default class GameSession extends EventTarget {
         this._onShootBound = false;
         this.positionBuffer = [];
         this.positionBufferIndex = 0;
-
+        this.gunPool = [];
+        this.inputMap?.clear?.();
     }
     updateWorld(snapshot) {
 
+    }
+    simulate(inputState,cameraPosition) {
+        let position = new Vector3(cameraPosition.x,cameraPosition.y,cameraPosition.z);
+
+        //these directions are flipped flopped due to rotation issues
+        //on render side
+        const MOVEMENT_SPEED = 3;
+        const LERP_TIME = ((1000/20) / 1000);
+        const FORWARD = inputState.directionalVectors.forward;
+        const RIGHT = inputState.directionalVectors.right;
+
+        let velocity = new Vector3();
+        if (inputState.forward) {
+            velocity.z += MOVEMENT_SPEED;
+        }
+        if (inputState.backward) {
+            velocity.z -= MOVEMENT_SPEED;
+        }
+        if (inputState.left) {
+            velocity.x -= MOVEMENT_SPEED;
+        }
+        if (inputState.right) {
+            velocity.x += MOVEMENT_SPEED;
+        }
+
+        let displacement = new Vector3();
+
+        displacement.x += FORWARD.x * LERP_TIME * (MOVEMENT_SPEED * velocity.z);
+        displacement.y += FORWARD.y * LERP_TIME * (MOVEMENT_SPEED * velocity.z);
+        displacement.z += FORWARD.z * LERP_TIME * (MOVEMENT_SPEED * velocity.z);
+
+        displacement.x += RIGHT.x * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
+        displacement.y += RIGHT.y * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
+        displacement.z += RIGHT.z * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
+
+        position.x += displacement.x;
+        position.y += displacement.y;
+        position.z += displacement.z;
+        return position;
     }
     onFixedUpdate(tickRate) {
 
@@ -468,16 +567,44 @@ export default class GameSession extends EventTarget {
             //TODO: client running same window logic
 
             if (this.camera) {
-                let inputState = {
-                    clientTick: this.clientTick,
-                    forward: this.inputManager.forward,
-                    backward: this.inputManager.backward,
-                    left: this.inputManager.left,
-                    right: this.inputManager.right,
-                    directionalVectors: this.getDirectionalVectors(this.camera.Q.m)
-                };
-                this.networkClient.sendInputState(inputState);
-                this.clientTick += 1;
+                //make sure the first input
+                if(this.inputBuffer.length > 0){
+                    let startPosition = this.inputBuffer[this.inputBuffer.length-1].targetPosition;
+                    //this.camera.setPosition(startPosition.x,startPosition.y,startPosition.z);
+
+                    let inputState = {
+                        forward: this.inputManager.forward,
+                        backward: this.inputManager.backward,
+                        left: this.inputManager.left,
+                        right: this.inputManager.right,
+                        directionalVectors: this.getDirectionalVectors(this.camera.Q.m)
+                    };
+
+                    let result = this.simulate(inputState, startPosition);
+
+                    let inputPacket = {
+                        clientTick: this.clientTick,
+                        //input state
+                        forward: inputState.forward,
+                        backward: inputState.backward,
+                        left: inputState.left,
+                        right: inputState.right,
+                        directionalVectors: inputState.directionalVectors,
+
+                        //input validation extras
+                        rotation: this.camera.getRotationRadians(),
+                        startPosition:startPosition,
+                        targetPosition:result
+                    };
+                    let index = this.inputBuffer.push(inputPacket)-1;
+                    this.inputMap.set(this.clientTick, {
+                        inputState: inputPacket,
+                        result: inputPacket,
+                        bufferIndex: index
+                    });
+                    this.networkClient.sendInputState(inputPacket);
+                    this.clientTick += 1;
+                }
             }
         }
     }
@@ -502,6 +629,14 @@ export default class GameSession extends EventTarget {
         while (this.fixedTickAccumulator >= this.fixedTickRate) {
             this.onFixedUpdate(this.fixedTickRate);
             this.fixedTickAccumulator -= this.fixedTickRate;
+        }
+        if(this.camera){
+            if(this.inputBuffer.length>1){
+                let lerpPosition = this.lerpVec3(this.inputBuffer[this.inputBuffer.length-1].startPosition,
+                                                    this.inputBuffer[this.inputBuffer.length-1].targetPosition,
+                                                    this.fixedTickAccumulator/this.fixedTickRate);
+                this.camera.setPosition(lerpPosition.x,lerpPosition.y,lerpPosition.z);
+            }
         }
         this.startTime = now;
         this.onUpdate(deltaTime);
