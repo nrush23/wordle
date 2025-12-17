@@ -114,25 +114,25 @@ export default class GameSession extends EventTarget {
         this._onRebuild = (event) => {
             console.log(event.detail.message);
 
-            if (!this.windowManager.BOXES){
+            if (!this.windowManager.BOXES) {
                 return;
             }
             //CHECK DISTANCE FROM EACH WINDOW
             var min_dist = Number.POSITIVE_INFINITY;
             var wid = -1;
-            this.windowManager.BOXES.forEach(box =>{
+            this.windowManager.BOXES.forEach(box => {
                 const box_pos = box.getPosition(false);
                 const cam_pos = this.camera.getPosition(false);
-                const pos = {x: box_pos.x - cam_pos.x,  y: box_pos.y - cam_pos.y,  z: box_pos.z - cam_pos.z};
+                const pos = { x: box_pos.x - cam_pos.x, y: box_pos.y - cam_pos.y, z: box_pos.z - cam_pos.z };
                 const dist = Math.hypot(pos.x, pos.y, pos.z);
-                if(min_dist > dist){
+                if (min_dist > dist) {
                     wid = box.metadata.wid;
                     min_dist = dist;
                 }
             });
-            if(min_dist <=5 ){
+            if (min_dist <= 5) {
                 console.log("Hit w%s: %s", wid, min_dist);
-                this.sendMessage("rebuild", {wid: wid});
+                this.sendMessage("rebuild", { wid: wid });
             }
         }
         const onGeneric = (event) => {
@@ -255,14 +255,26 @@ export default class GameSession extends EventTarget {
                         switch (health) {
                             case 75:
                                 this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = true;
+                                this.windows[snapshot.windowId].boards[2].render = true;
+                                this.windows[snapshot.windowId].boards[3].render = true;
                                 break;
                             case 50:
+                                this.windows[snapshot.windowId].boards[0].render = false;
                                 this.windows[snapshot.windowId].boards[1].render = false;
+                                this.windows[snapshot.windowId].boards[2].render = true;
+                                this.windows[snapshot.windowId].boards[3].render = true;
                                 break;
                             case 25:
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = false;
                                 this.windows[snapshot.windowId].boards[2].render = false;
+                                this.windows[snapshot.windowId].boards[3].render = true;
                                 break;
                             case 0:
+                                this.windows[snapshot.windowId].boards[0].render = false;
+                                this.windows[snapshot.windowId].boards[1].render = false;
+                                this.windows[snapshot.windowId].boards[2].render = false;
                                 this.windows[snapshot.windowId].boards[3].render = false;
                                 break;
                             case 100:
@@ -379,7 +391,7 @@ export default class GameSession extends EventTarget {
                 this._shootBound = true;
             }
 
-            if(!this._rebuildBound){
+            if (!this._rebuildBound) {
                 this.addEventListener("rebuild", this._onRebuild);
                 this._rebuildBound = true;
             }

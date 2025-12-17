@@ -130,13 +130,13 @@ function Scene(canvas, prefix, gameSession) {
          // MESHES.push(new Mesh(data, false, false, 8, -1, rgb(255,255,153,1))); //If color
       }
 
-      //Add in spawns temporarily
-      for(let i = 0; i < SPAWNS.length; i++){
-         let data = await Parser.importMesh(PATH + '/spawns/', SPAWNS[i] + '.ply', true);
-         MESHES.push(new Mesh(data, false, false, 8, -1, rgb(0,255,0,1)));
-         const position = MESHES[MESHES.length-1].getPosition(false);
-         console.log("Loaded %s.ply: (%s, %s, %s)", SPAWNS[i], position.x, position.y, position.z);
-      }
+      // //Add in spawns temporarily
+      // for(let i = 0; i < SPAWNS.length; i++){
+      //    let data = await Parser.importMesh(PATH + '/spawns/', SPAWNS[i] + '.ply', true);
+      //    MESHES.push(new Mesh(data, false, false, 8, -1, rgb(0,255,0,1)));
+      //    const position = MESHES[MESHES.length-1].getPosition(false);
+      //    console.log("Loaded %s.ply: (%s, %s, %s)", SPAWNS[i], position.x, position.y, position.z);
+      // }
 
       return MESHES;
    };
@@ -188,7 +188,7 @@ uniform vec4 uC;
 uniform float uTime;
 uniform int uID;
 uniform vec2 uOff;
-uniform sampler2D uSampler[5]; //U, V SAMPLER
+uniform sampler2D uSampler[6]; //U, V SAMPLER
 in  vec3 vPos, vNor;
 in vec2 vUV;
 
@@ -212,8 +212,10 @@ void main() {
          T = texture(uSampler[2], vUV);
       }else if (uID == 3){
          T = texture(uSampler[3], vUV + uOff);
-      }else{
+      }else if (uID == 4){
          T = texture(uSampler[4], vUV);
+      }else{
+         T = texture(uSampler[5], vUV);
       }
       fragColor = vec4(sqrt(c_s)*T.rgb, 1.);
    }else{
@@ -242,8 +244,9 @@ void main() {
    };
    this.initialize = async () => {
       vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
-
-      setUniform('1iv', 'uSampler', [0, 1, 2, 3, 4]);
+      addTexture(4, prefix + '/final/textures/', 'zurg.png');
+      addTexture(5, prefix + '/hw10/textures/', 'skin1.png');
+      setUniform('1iv', 'uSampler', [0, 1, 2, 3, 4, 5]);
       setUniform('2fv', 'uOff', [this.XOFF, this.YOFF]);
       let ROOM = await makeRoom();
       ROOM.forEach(mesh => {
@@ -274,7 +277,7 @@ void main() {
          arm.setParent(this.C);
       });
 
-      this.C.move(0, 2, 3);
+      this.C.move(0, 0, 3);
       setUniform('Matrix4fv', 'uMV', false, this.C.QI.m);
 
       
@@ -286,18 +289,6 @@ void main() {
          scene:this
       });
 
-      this.testCube = new Cube(true);
-
-      for (let i =0;i<5;i++){
-         let cube = new Cube(true);
-         cube.name = "target "+ i;
-         
-         cube.setPosition(-20 + (i*20) , 50 , 0);
-         let index = this.MESHES.push(cube);
-         cube.metadata = {
-            id:index-1
-         };
-      }
       let hitUnsubscribe = this.gameSession.eventBus.on("game:hit",(event)=>{
          console.log('a target was hit');
          for(let i=this.MESHES.length-1;i>-1;i--){
@@ -342,17 +333,17 @@ void main() {
 
       let data = await Parser.importMesh(PATH, FILE, true);
 
-      let M = new Mesh(data, false, false, 8, 4);
+      let M = new Mesh(data, false, false, 8, 5);
 
-      addTexture(4, prefix + '/hw10/textures/', 'skin1.png');
+      // addTexture(4, prefix + '/hw10/textures/', 'skin1.png');
 
 
       M.move(0, 1, 0);
 
 
       //debug to outline bounding box
-      let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
-      this.MESHES.push(boundingBox);
+      //let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
+      //this.MESHES.push(boundingBox);
       //end debug 
 
       return M;
@@ -365,15 +356,15 @@ void main() {
 
       let M = new Mesh(data, false, false, 8, 4);
 
-      addTexture(4, prefix + '/final/textures/', 'zurg.png');
+      // addTexture(4, prefix + '/final/textures/', 'zurg.png');
 
 
       M.move(3, 1, 0);
 
 
       //debug to outline bounding box
-      let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
-      this.MESHES.push(boundingBox);
+      //let boundingBox = new BoundingBoxMesh(M,[0,1,0,.1]);
+      // this.MESHES.push(boundingBox);
       //end debug 
 
       return M;
