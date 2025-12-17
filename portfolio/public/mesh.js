@@ -766,3 +766,6 @@ class BoundingBoxMesh extends Mesh {
     this.bake();
   }
 }
+
+
+
