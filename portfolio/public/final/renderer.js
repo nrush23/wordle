@@ -117,7 +117,7 @@ function Scene(canvas, prefix, gameSession) {
    }
 
    let makeRoom = async () => {
-      const FILES = ['final_map'];
+      const FILES = ['pretty_map', 'ground'];
       const PATH = "/final/models/";
 
       const SPAWNS = ['sp1', 'sp2', 'sp3', 'sp4', 'sp5', 'sp6', 'sp7'];
@@ -244,6 +244,7 @@ void main() {
    };
    this.initialize = async () => {
       vertexMap(['aPos', 3, 'aNor', 3, 'aUV', 2]);
+      addTexture(2, prefix + '/final/textures/', 'm1garrand_v2.png');
       addTexture(4, prefix + '/final/textures/', 'zurg.png');
       addTexture(5, prefix + '/hw10/textures/', 'skin1.png');
       setUniform('1iv', 'uSampler', [0, 1, 2, 3, 4, 5]);
@@ -313,7 +314,7 @@ void main() {
 
       this.loadM1Garrand().then((mesh)=>{
          this.MESHES.push(mesh);
-         mesh.turnY(180 * Math.PI/180);
+         mesh.turnY(Math.PI/180);
          mesh.setPosition(.3,1.5,-1.8);
          mesh.setParent(this.C);
          
@@ -370,12 +371,12 @@ void main() {
       return M;
    }
    this.loadM1Garrand = async () =>{
-      const FILE = "m1garrand_v2.ply";
+      const FILE = "gun.ply";
       const PATH = "/final/models/";
 
       let data = await Parser.importMesh(PATH, FILE, true);
 
-      let M = new Mesh(data, false, false, 8);
+      let M = new Mesh(data, false, false, 8, 2);
 
       M.move(3, 1, 0);
 
