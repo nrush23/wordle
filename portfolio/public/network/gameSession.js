@@ -211,7 +211,7 @@ export default class GameSession extends EventTarget {
                                     if(!model.metadata.armed){
                                         if(this.gunPool.length > 0){
                                             model.metadata.gunModel = this.gunPool.pop();
-                                            model.metadata.gunModel.setPosition(0, 2, 0);
+                                            model.metadata.gunModel.setPosition(0, 1, 0);
                                             model.metadata.gunModel.setParent(model);
                                             model.metadata.armed = true;
                                         }
@@ -235,6 +235,7 @@ export default class GameSession extends EventTarget {
                             model.metadata.armed = false;
                             if (model.metadata.gunModel) {
                                 model.metadata.gunModel.parent = null;
+                                model.metadata.gunModel.setPosition(0, -10, 0);
                                 this.gunPool.push(model.metadata.gunModel);
                             }
                         }
@@ -355,7 +356,7 @@ export default class GameSession extends EventTarget {
             const meshes = event.meshes;
             this.camera = event.camera;
 
-            const TEST_ZURG = new Zurg(1);
+            /*const TEST_ZURG = new Zurg(1);
             TEST_ZURG.makeBody().then(() => {
                 if (this._disposed) return;
 
@@ -367,7 +368,7 @@ export default class GameSession extends EventTarget {
 
                 meshes.push(TEST_ZURG.body);
 
-            }, (error) => { });
+            }, (error) => { });*/
 
 
             this.windowManager.initialize().then((boards) => {
@@ -398,13 +399,13 @@ export default class GameSession extends EventTarget {
             for (let i = 0; i < MAX_ZURGS; i++) {
                 this.loadZurgModel().then((mesh) => {
                     if (this._disposed) return;
-                    meshes.push(mesh);
                     this.zurgModels.push(mesh);
                     mesh.name = "zurg" + i;
                     mesh.metadata = {
                         zid: i,
                         health: -1
                     };
+                    meshes.push(mesh);
                 }, (error) => { console.log(error) });
             }
 
@@ -436,7 +437,7 @@ export default class GameSession extends EventTarget {
                     if (this._disposed) return;
                     m1Mesh.turnY(180 * Math.PI / 180);
                     //m1Mesh.setPosition(.3, 1.5, -1.8);
-                    m1Mesh.setPosition(-50 + (10*i), 0, 0);
+                    m1Mesh.setPosition(-50 + (10*i), -20, 0);
                     //m1Mesh.setParent(camCube);
                     meshes.push(m1Mesh);
                     this.gunPool.push(m1Mesh);

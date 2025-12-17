@@ -78,7 +78,7 @@ export default class NetworkClient extends EventTarget{
         //once underlying transport is ready to send messages send out handshake request
         this.transport.addEventListener("open", (event) => {
             console.log("[NetworkClient]transport open");
-            this.sendJoin({username:"wa da fak",secretKey:"asdasdasdasd"});
+            this.sendJoin({username:"no name yuh",secretKey:"asdasdasdasd"});
         });
 
         //hook up different protocol level and game level packet messages

@@ -294,7 +294,7 @@ void main() {
       });
 
       let hitUnsubscribe = this.gameSession.eventBus.on("game:hit",(event)=>{
-         console.log('a target was hit');
+         //console.log('a target was hit');
          for(let i=this.MESHES.length-1;i>-1;i--){
             if(this.MESHES[i].name){
                if(this.MESHES[i].name === event.name){
@@ -323,11 +323,11 @@ void main() {
          
 
       },(error)=>{console.log(error)});
-      this.loadThompson().then((mesh)=>{
+      /*this.loadThompson().then((mesh)=>{
          this.MESHES.push(mesh);
          
       },(error)=>{console.log(error)});
-      this.loadRifle().then((mesh)=>{this.MESHES.push(mesh)},(error)=>{console.log(error)});
+      this.loadRifle().then((mesh)=>{this.MESHES.push(mesh)},(error)=>{console.log(error)});*/
    }
 
    //boba: start
