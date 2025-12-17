@@ -12,8 +12,8 @@ export default class WindowManager {
         for (let i = 0; i < WINDOW_NAMES.length; i++) {
             const WINDOW = WINDOW_NAMES[i];
             for (let BOARD = 0; BOARD < 4; BOARD++) {
-                const NAME = WINDOW + '_' + BOARD + '.ply';
-                let data = await Parser.importMesh(PATH, NAME, true);
+                const NAME = WINDOW + '_' + BOARD;
+                let data = await Parser.importMesh(PATH, NAME + '.ply', true);
                 MESHES[i*4 + BOARD] = new Mesh(data, false, false, 8, 0);
                 this.WINDOWS.set(NAME, MESHES[i*4 + BOARD]);
             }
@@ -42,7 +42,7 @@ export default class WindowManager {
     changeRandomWindow(){
         const NAME = WINDOW_NAMES[Math.floor(Math.random() * WINDOW_NAMES.length)];
         const BOARD = Math.floor(Math.random() * 4);
-        const WINDOW = this.WINDOWS.get(NAME + '_' + BOARD + '.ply');
+        const WINDOW = this.WINDOWS.get(NAME + '_' + BOARD);
         WINDOW.render = !WINDOW.render;
         console.log(NAME + '_' + BOARD + '.ply');
     }
