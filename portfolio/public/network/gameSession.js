@@ -4,6 +4,7 @@ import customEventHandler from "./customEventHandler.js";
 import { Scene } from "../final/renderer.js";
 import WindowManager from "../final/gameLogic/WindowManager.js";
 import Zurg from "../final/gameLogic/zurg.js";
+ 
 
 class Vector3 {
     constructor(x, y, z) {
@@ -51,6 +52,8 @@ export default class GameSession extends EventTarget {
     scene;
     /** @type {Mesh} */
     camera;
+    /** @type {String} */
+    prefix;
 
     /** @type {Number} just tracks the tick since scene initialized */
     clientTick = 0;
@@ -103,9 +106,10 @@ export default class GameSession extends EventTarget {
             if (result.length > 0) {
                 result.forEach((value) => {
                     if (value.mesh.metadata) {
-                        this.eventBus.emit("game:hit", { name: value.mesh.name });
-                        if (value.mesh.metadata.zid) {
-                            console.log("hit zombie");
+                        console.log(value.mesh.metadata);
+                        //this.eventBus.emit("game:hit", { name: value.mesh.name });
+                        if (value.mesh.metadata.zid >-1) {
+                            console.log("hit zombie " + value.mesh.metadata.zid);
                             //value.mesh.render = false; 
                             this.sendMessage("shoot", { zid: value.mesh.metadata.zid });
                         }
@@ -340,6 +344,7 @@ export default class GameSession extends EventTarget {
             //check if disposed
             if (this._disposed) return;
 
+
             console.log(` ${this._sessionId} gameSession id initialized`);
 
 
@@ -370,6 +375,8 @@ export default class GameSession extends EventTarget {
 
             }, (error) => { });*/
 
+            
+
 
             this.windowManager.initialize().then((boards) => {
                 if (this._disposed) return;
@@ -396,15 +403,19 @@ export default class GameSession extends EventTarget {
 
             //fill zurg pool
             const MAX_ZURGS = 15;
+            this.zurgModels = [];
             for (let i = 0; i < MAX_ZURGS; i++) {
                 this.loadZurgModel().then((mesh) => {
                     if (this._disposed) return;
-                    this.zurgModels.push(mesh);
-                    mesh.name = "zurg" + i;
+                    console.log(this.zurgModels.length);
+                    let index = this.zurgModels.push(mesh)-1;
+                    console.log("index" + index+" length: "+this.zurgModels.length);
+                    mesh.name = "zurg" + index;
                     mesh.metadata = {
-                        zid: i,
+                        zid: index,
                         health: -1
                     };
+                    console.log(mesh.metadata.zid);
                     meshes.push(mesh);
                 }, (error) => { console.log(error) });
             }
@@ -414,9 +425,9 @@ export default class GameSession extends EventTarget {
                 this.loadDurgModel().then((mesh) => {
                     if (this._disposed) return;
 
-                    let camCube = new Cube();
-                    camCube.scale(.5,.5,.5);
-                    camCube.setPosition(0,0,0);
+                    let camCube = new Cube(true);
+                    camCube.scale(.25,.25,.25);
+                    camCube.setPosition(0,1,-1);
                     camCube.setParent(mesh);
                     mesh.setPosition(0, -5, 0);
                     mesh.metadata = {
@@ -424,6 +435,7 @@ export default class GameSession extends EventTarget {
                         gunModel:null
                     };
                     meshes.push(mesh);
+                    meshes.push(camCube);
                     let index = this.unusedModels.push(mesh);
                     //console.log(`[GameSession][${this._sessionId}] generated new durg`);
                     console.log(this.unusedModels[index - 1]);
@@ -462,7 +474,7 @@ export default class GameSession extends EventTarget {
 
 
 
-                this.networkClient.connect("ws://localhost:3005");
+                this.networkClient.connect("wss://cdn.flickshotpro.com/ws");
                 this._connectedOnce = true;
 
             }
@@ -513,6 +525,7 @@ export default class GameSession extends EventTarget {
         this.positionBufferIndex = 0;
         this.gunPool = [];
         this.inputMap?.clear?.();
+        this.prefix = undefined;
     }
     updateWorld(snapshot) {
 
@@ -552,7 +565,8 @@ export default class GameSession extends EventTarget {
         displacement.z += RIGHT.z * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
 
         position.x += displacement.x;
-        position.y += displacement.y;
+        //position.y += displacement.y;
+        position.y = 1;
         position.z += displacement.z;
         return position;
     }

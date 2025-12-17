@@ -45,7 +45,7 @@ export default function Final() {
     // 3) Parser prefix + WebGL start
     // Parser, Scene, gl_start are globals coming from your scripts
     Parser.prefix = prefix;
-
+    gameSession.current.prefix = prefix;
     const scene = new Scene(canvas, prefix, gameSession.current);
 
     // IMPORTANT: your patched gl_start should RETURN a cleanup function
