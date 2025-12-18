@@ -425,17 +425,17 @@ export default class GameSession extends EventTarget {
                 this.loadDurgModel().then((mesh) => {
                     if (this._disposed) return;
 
-                    let camCube = new Cube(true);
-                    camCube.scale(.25,.25,.25);
-                    camCube.setPosition(0,1,-1);
-                    camCube.setParent(mesh);
+                    //let camCube = new Cube(true);
+                    //camCube.scale(.25,.25,.25);
+                    //camCube.setPosition(0,1,-1);
+                    //camCube.setParent(mesh);
                     mesh.setPosition(0, -5, 0);
                     mesh.metadata = {
                         armed:false,
                         gunModel:null
                     };
                     meshes.push(mesh);
-                    meshes.push(camCube);
+                    //meshes.push(camCube);
                     let index = this.unusedModels.push(mesh);
                     //console.log(`[GameSession][${this._sessionId}] generated new durg`);
                     console.log(this.unusedModels[index - 1]);
@@ -447,7 +447,7 @@ export default class GameSession extends EventTarget {
             for(let i =0;i<10;i++){
                 this.loadM1Garrand().then((m1Mesh) => {
                     if (this._disposed) return;
-                    m1Mesh.turnY(180 * Math.PI / 180);
+                    m1Mesh.turnY(Math.PI / 180);
                     //m1Mesh.setPosition(.3, 1.5, -1.8);
                     m1Mesh.setPosition(-50 + (10*i), -20, 0);
                     //m1Mesh.setParent(camCube);
