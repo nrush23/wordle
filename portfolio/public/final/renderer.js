@@ -200,7 +200,7 @@ void main() {
    vec3 nor = normalize(vNor);
    vec3 L = vec3(0.0,0.5,0.0);
    float c_s = 0.5 + max(0., dot(normalize(L),nor));
-
+   vec4 sky = vec4(0.0);
    //No color means use texture
    if (uC == vec4(-1.0)){
       vec4 T;
