@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 export default () => {
     const isProd = process.env.NODE_ENV === "production";
-    const prefix = isProd ? "/~ncr7500" : "";
+    const prefix = isProd ? "" : "";//"/~ncr7500" : "";
 
     return {
         output: "export",

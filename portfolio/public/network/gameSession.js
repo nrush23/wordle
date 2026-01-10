@@ -214,10 +214,11 @@ export default class GameSession extends EventTarget {
                             if(model.metadata){
                                     if(!model.metadata.armed){
                                         if(this.gunPool.length > 0){
+                                            model.metadata.armed = true;
                                             model.metadata.gunModel = this.gunPool.pop();
                                             model.metadata.gunModel.setPosition(0, 1, 0);
                                             model.metadata.gunModel.setParent(model);
-                                            model.metadata.armed = true;
+                                            
                                         }
                                     }
                                 }
@@ -238,7 +239,7 @@ export default class GameSession extends EventTarget {
                         if (model.metadata) {
                             model.metadata.armed = false;
                             if (model.metadata.gunModel) {
-                                model.metadata.gunModel.parent = null;
+                                model.metadata.gunModel.setParent(null);
                                 model.metadata.gunModel.setPosition(0, -10, 0);
                                 this.gunPool.push(model.metadata.gunModel);
                             }

@@ -10,15 +10,15 @@ export default function Contacts() {
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <Image
           className="rounded-lg"
-          src={`${prefix}/assets/id.jpg`}
-          alt="Naria Rush"
+          src={`${prefix}/assets/increblecrimmus.png`}
+          alt="Steve Rush"
           width={180}
           height={38}
           priority
         />
         <ul className="font-mono list-inside text-sm/6 text-center sm:text-left">
           <li className="mb-2 tracking-[-.01em]">
-            ncr7500@nyu.edu
+            sr@flickshotpro.com
           </li>
           <li className="tracking-[-.01em]">
             <a href="https://www.durgsdurgers.com">www.durgsdurgers.com</a>
