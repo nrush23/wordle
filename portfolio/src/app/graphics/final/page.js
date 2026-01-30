@@ -25,8 +25,7 @@ export default function Final() {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   useEffect(() => {
-    if (!scriptsReady) return;
-
+    
     const canvas = document.getElementById("glcanvas");
     if (!canvas) return;
 
@@ -52,9 +51,11 @@ export default function Final() {
     const stop = gl_start(canvas, scene);
 
     return () => {
+      console.log("RUNNING CLEANUP ");
       // Clean up in reverse order
       window.removeEventListener("resize", resizeWindow);
       try {
+        
         gameSession.current?.dispose?.();
         stop?.(); // clears webgl interval, removes scene events, calls scene.dispose()
       } catch (e) {

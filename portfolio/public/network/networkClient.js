@@ -121,7 +121,7 @@ export default class NetworkClient extends EventTarget{
                         }}));
                         break;
                     case 11: // generic event message 
-                    console.log(packet);
+                    //console.log(packet);
                         this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.GENERIC,{detail:{
                             event:packet.event,
                             data:packet.data

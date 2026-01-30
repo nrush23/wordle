@@ -4,41 +4,11 @@ import customEventHandler from "./customEventHandler.js";
 import { Scene } from "../final/renderer.js";
 import WindowManager from "../final/gameLogic/WindowManager.js";
 import Zurg from "../final/gameLogic/zurg.js";
- 
+import Vector3 from "./vector3.js";
 
-class Vector3 {
-    constructor(x, y, z) {
-        this.x = x ?? 0;
-        this.y = y ?? 0;
-        this.z = z ?? 0;
-    }
-    static distance(a, b) {
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dz = b.z - a.z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-    static moveTowards(start, goal, maxDistance) {
-        const dx = goal.x - start.x;
-        const dy = goal.y - start.y;
-        const dz = goal.z - start.z;
+//client side prediction code
+import {simulate, ClientCommandRing, getInputCommand, InputState}  from "./clientSidePrediction.js";
 
-        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        // If already at the goal or within range, return goal
-        if (distance === 0 || distance <= maxDistance) {
-            return { x: goal.x, y: goal.y, z: goal.z };
-        }
-
-        const t = maxDistance / distance;
-
-        return {
-            x: start.x + dx * t,
-            y: start.y + dy * t,
-            z: start.z + dz * t
-        };
-    }
-}
 /** @class GameSession class to handle high level game functions such as world building */
 export default class GameSession extends EventTarget {
     eventBus;
@@ -78,13 +48,11 @@ export default class GameSession extends EventTarget {
         this.zurgModels = [];
         this._connectedOnce = false;
         this._shootBound = false;
-
+        this._inputValidate = false;
         this._rebuildBound = false;
 
         this.positionBuffer = [];
         this.positionBufferIndex = 0;
-        this.inputMap = new Map();
-        this.inputBuffer = [];
 
         //load zurg and durg functions
         this.loadDurgModel = undefined;
@@ -171,15 +139,7 @@ export default class GameSession extends EventTarget {
                     for (let i = 0; i < playerSnapshot.length; i++) {
                         let playerState = playerSnapshot[i];
                         if (playerState.clientId === this.uuid) {
-                            this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-                            if (this.inputBuffer.length == 0) {
-                                this.inputBuffer.push({
-                                    inputState: null,
-                                    startPosition: new Vector3(playerState.position.x, playerState.position.y, playerState.position.z),
-                                    targetPosition: new Vector3(playerState.position.x, playerState.position.y, playerState.position.z)
-                                });
-                            }
-
+                            //this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
                         } 
                         else {
                         //case brand new uuid
@@ -341,6 +301,8 @@ export default class GameSession extends EventTarget {
         this.networkClient.addEventListener(NetworkClient.EVENTS.SNAPSHOT, onSnapshot);
         this._netHandlers.push([NetworkClient.EVENTS.SNAPSHOT, onSnapshot]);
 
+        
+
         const onSceneInitialized = (event) => {
             //check if disposed
             if (this._disposed) return;
@@ -468,6 +430,10 @@ export default class GameSession extends EventTarget {
                 this._rebuildBound = true;
             }
 
+            if(!this._inputValidate){
+                this.addEventListener("INPUT_VALIDATE", this.onInputValidate);
+                this._inputValidate = true;
+            }
             //after scene is initialized, connect to server to start receiving game state
             if (!this._connectedOnce &&
                 this.networkClient.state !== NetworkClient.STATES.CONNECTED &&
@@ -487,13 +453,18 @@ export default class GameSession extends EventTarget {
         this._unsubs.push(unsubScene);
     }
     dispose() {
+        console.error("DISPOSING " + this._sessionId);
         if (this._disposed) return;
         this._disposed = true;
 
         //remove shoot listener
         if (this._onShoot) {
             this.removeEventListener('shoot', this._onShoot);
-            this._onShoot = null;
+            this._onShoot = false;
+        }
+        if(this._inputValidate){
+            this.removeEventListener("INPUT_VALIDATE", this.onInputValidate);
+            this._inputValidate = false;
         }
 
         // remove game event listeners
@@ -521,105 +492,129 @@ export default class GameSession extends EventTarget {
         this.loadZurgModel = undefined;
         this._netHandlers = [];
         this._unsubs = [];
-        this._onShootBound = false;
         this.positionBuffer = [];
         this.positionBufferIndex = 0;
         this.gunPool = [];
-        this.inputMap?.clear?.();
         this.prefix = undefined;
     }
     updateWorld(snapshot) {
 
     }
-    simulate(inputState,cameraPosition) {
-        let position = new Vector3(cameraPosition.x,cameraPosition.y,cameraPosition.z);
+    
+    commandNumber = 0;
+    clientCommandRing = new ClientCommandRing();
+    lastSendCommand = -1;
+    networkSendTick = 0;
+    boolFirstCommandSent = false;
+    onInputValidate(event){
+        //console.log(event.detail.inputCommand.targetPosition);
+        //console.log(event.detail.trueResult);
 
-        //these directions are flipped flopped due to rotation issues
-        //on render side
-        const MOVEMENT_SPEED = 3;
-        const LERP_TIME = ((1000/20) / 1000);
-        const FORWARD = inputState.directionalVectors.forward;
-        const RIGHT = inputState.directionalVectors.right;
+        let inputCommand = event.detail.inputCommand;
+        this.clientCommandRing.confirmAcknowledge(inputCommand);
 
-        let velocity = new Vector3();
-        if (inputState.forward) {
-            velocity.z += MOVEMENT_SPEED;
+        let clientSideTargetPosition = event.detail.inputCommand.targetPosition;
+        let truePosition = event.detail.trueResult;
+
+        let matched = false;
+        if(event.detail.inputCommand.targetPosition.x == event.detail.trueResult.x &&
+            event.detail.inputCommand.targetPosition.y == event.detail.trueResult.y&&
+            event.detail.inputCommand.targetPosition.z == event.detail.trueResult.z
+        ){
+            matched = true;
         }
-        if (inputState.backward) {
-            velocity.z -= MOVEMENT_SPEED;
+
+        
+        
+        
+        if(!matched){
+            console.log("no match");
+            let wrongCommand = this.clientCommandRing.get(inputCommand.commandNumber);
+            console.log("start "+ this._sessionId);
+            console.log(this.clientCommandRing.latestCommand);
+            console.log(this.clientCommandRing.lastAcknowledgedCommand);
+            console.log(inputCommand.commandNumber);
+            console.log(wrongCommand);
+            console.log("end "+ this._sessionId);
+            /*wrongCommand.command.targetPosition.x = truePosition.x;
+            wrongCommand.command.targetPosition.y = truePosition.y;
+            wrongCommand.command.targetPosition.z = truePosition.z;
+
+            for (let i = this.clientCommandRing.lastAcknowledgedCommand + 1; i <= this.clientCommandRing.latestCommand; i++) {
+                const command1 = this.clientCommandRing.get(i-1);
+                const command2 = this.clientCommandRing.get(i);
+                if (!command2) break; // overwritten: too much time passed
+                command2.command.startPosition = command1.command.targetPosition;
+                command2.command.targetPosition = simulate(command2.command,command2.command.startPosition);
+            }*/
         }
-        if (inputState.left) {
-            velocity.x -= MOVEMENT_SPEED;
-        }
-        if (inputState.right) {
-            velocity.x += MOVEMENT_SPEED;
-        }
-
-        let displacement = new Vector3();
-
-        displacement.x += FORWARD.x * LERP_TIME * (MOVEMENT_SPEED * velocity.z);
-        displacement.y += FORWARD.y * LERP_TIME * (MOVEMENT_SPEED * velocity.z);
-        displacement.z += FORWARD.z * LERP_TIME * (MOVEMENT_SPEED * velocity.z);
-
-        displacement.x += RIGHT.x * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
-        displacement.y += RIGHT.y * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
-        displacement.z += RIGHT.z * LERP_TIME * (MOVEMENT_SPEED * velocity.x);
-
-        position.x += displacement.x;
-        //position.y += displacement.y;
-        position.y = 1;
-        position.z += displacement.z;
-        return position;
     }
     onFixedUpdate(tickRate) {
+       
 
-        //TODO: add state for Looping/Updating instead of using NetworkClient state
         if (this.networkClient.state === NetworkClient.STATES.CONNECTED) {
-            //TODO: a way client can send to server which zombies get shot
-            //TODO: send zombie health
-            //TODO: send player health
-            //TODO: send player ammo
-            //TODO: client running same window logic
+
+            //network send loop
+            if (this.networkSendTick == 1) {
+                if (!this.boolFirstCommandSent) {
+                    //there are commands in the buffer
+                    if (this.clientCommandRing.latestCommand !== -1) {
+                        // a command was sent but not acknowledged
+                        if (this.clientCommandRing.lastAcknowledgedCommand == -1) {
+
+                        }
+                    }
+                }
+                //send packets
+                this.networkSendTick = 0;
+            }
+            this.networkSendTick += 1;
 
             if (this.camera) {
-                //make sure the first input
-                if(this.inputBuffer.length > 0){
-                    let startPosition = this.inputBuffer[this.inputBuffer.length-1].targetPosition;
-                    //this.camera.setPosition(startPosition.x,startPosition.y,startPosition.z);
-
-                    let inputState = {
-                        forward: this.inputManager.forward,
-                        backward: this.inputManager.backward,
-                        left: this.inputManager.left,
-                        right: this.inputManager.right,
-                        directionalVectors: this.getDirectionalVectors(this.camera.Q.m)
-                    };
-
-                    let result = this.simulate(inputState, startPosition);
-
-                    let inputPacket = {
-                        clientTick: this.clientTick,
-                        //input state
-                        forward: inputState.forward,
-                        backward: inputState.backward,
-                        left: inputState.left,
-                        right: inputState.right,
-                        directionalVectors: inputState.directionalVectors,
-
-                        //input validation extras
-                        rotation: this.camera.getRotationRadians(),
-                        startPosition:startPosition,
-                        targetPosition:result
-                    };
-                    let index = this.inputBuffer.push(inputPacket)-1;
-                    this.inputMap.set(this.clientTick, {
-                        inputState: inputPacket,
-                        result: inputPacket,
-                        bufferIndex: index
-                    });
-                    this.networkClient.sendInputState(inputPacket);
-                    this.clientTick += 1;
+                //make sure camera exists
+                let inputState = new InputState({
+                    forward: this.inputManager.forward,
+                    backward: this.inputManager.backward,
+                    left: this.inputManager.left,
+                    right: this.inputManager.right,
+                    directionalVectors: this.getDirectionalVectors(this.camera.Q.m)
+                });
+                let startPosition = new Vector3();
+                if (this.commandNumber == 0) {
+                    startPosition.x = this.camera.getPosition(false).x;
+                    startPosition.y = this.camera.getPosition(false).y;
+                    startPosition.z = this.camera.getPosition(false).z;
                 }
+                else{
+                    //THIS IS A REFERENCE
+                    startPosition.x = this.clientCommandRing.get(this.commandNumber - 1).command.targetPosition.x;
+                    startPosition.y = this.clientCommandRing.get(this.commandNumber - 1).command.targetPosition.y;
+                    startPosition.z = this.clientCommandRing.get(this.commandNumber - 1).command.targetPosition.z;
+                }
+
+                let result = simulate(inputState, startPosition);
+
+                let inputCommand = {
+                    //commandNumber id and tick id
+                    commandNumber: this.commandNumber,
+                    clientTick: this.clientTick,
+                    //input state
+                    forward: inputState.forward,
+                    backward: inputState.backward,
+                    left: inputState.left,
+                    right: inputState.right,
+                    directionalVectors: inputState.directionalVectors,
+
+                    //input validation extras
+                    rotation: this.camera.getRotationRadians(),
+                    startPosition: startPosition,
+                    targetPosition: result
+                };
+                this.clientCommandRing.set(inputCommand);
+                this.networkClient.sendInputState(inputCommand);
+                this.commandNumber += 1;
+                this.clientTick += 1;
+                //console.log(this.clientCommandRing);
             }
         }
     }
@@ -646,11 +641,10 @@ export default class GameSession extends EventTarget {
             this.fixedTickAccumulator -= this.fixedTickRate;
         }
         if(this.camera){
-            if(this.inputBuffer.length>1){
-                let lerpPosition = this.lerpVec3(this.inputBuffer[this.inputBuffer.length-1].startPosition,
-                                                    this.inputBuffer[this.inputBuffer.length-1].targetPosition,
-                                                    this.fixedTickAccumulator/this.fixedTickRate);
-                this.camera.setPosition(lerpPosition.x,lerpPosition.y,lerpPosition.z);
+            if (this.commandNumber > 1){
+                let command = this.clientCommandRing.get(this.commandNumber -1).command;
+                let goal = Vector3.moveTowards(command.startPosition,command.targetPosition,this.fixedTickAccumulator/this.fixedTickRate);
+                this.camera.setPosition(goal.x,goal.y,goal.z);
             }
         }
         this.startTime = now;

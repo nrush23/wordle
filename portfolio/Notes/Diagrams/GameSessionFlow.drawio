@@ -1,0 +1,279 @@
+<mxfile host="app.diagrams.net" modified="2026-01-20T00:00:00.000Z" agent="GPT" version="22.1.0">
+  <diagram id="gamesession-flow" name="GameSession Flow">
+    <mxGraphModel dx="1320" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="GameSession Client Flow (from provided code)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="40" width="1360" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Section containers -->
+        <mxCell id="sec1" value="1) Construction / Wiring" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="100" width="1360" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sec2" value="2) Scene Initialization (eventBus scene:initialized)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="340" width="1360" height="380" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sec3" value="3) Network Events" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="740" width="1360" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sec4" value="4) Snapshot Processing (NetworkClient SNAPSHOT)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="980" width="1360" height="520" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sec5" value="5) Fixed Tick Loop and Input Send (20Hz)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1520" width="1360" height="420" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sec6" value="6) Local Events (Shoot and Rebuild)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1960" width="1360" height="260" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sec7" value="7) Dispose" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="2240" width="1360" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- Nodes: Construction -->
+        <mxCell id="n_start" value="START" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="140" y="140" width="90" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_ctor" value="constructor(): init fields, pools, buffers, flags" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="130" width="360" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_defineHandlers" value="define handlers&#10;onShoot, onRebuild&#10;onGeneric, onConnected, onSnapshot&#10;onSceneInitialized" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="650" y="120" width="360" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_attachNet" value="attach NetworkClient listeners&#10;GENERIC, CONNECTED, UUIDS, SNAPSHOT" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="120" width="410" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_subScene" value="subscribe eventBus scene:initialized" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="220" width="360" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Nodes: Scene Initialization -->
+        <mxCell id="n_sceneInit" value="onSceneInitialized(event)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="380" width="260" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_disposed1" value="disposed?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="550" y="372" width="120" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_bindLoaders" value="bind loaders and refs&#10;loadDurg, loadZurg, load guns&#10;set MESHES, scene, camera" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="700" y="360" width="320" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_windowsInit" value="windowManager.initialize()&#10;create boards&#10;group into windows&#10;push boards into meshes" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="360" width="410" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_fillPools" value="fill pools&#10;zurgModels (15)&#10;unusedModels (10)&#10;gunPool (10)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="470" width="420" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_bindLocalEvents" value="bind local events once&#10;add listener shoot&#10;add listener rebuild" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="700" y="470" width="320" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_connectOnce" value="already connected&#10;or connectedOnce?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="480" width="200" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_connect" value="networkClient.connect&#10;wss://cdn.flickshotpro.com/ws&#10;connectedOnce = true" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="480" width="190" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Nodes: Network Events -->
+        <mxCell id="n_connectedEvt" value="Network CONNECTED&#10;set uuid&#10;customEventHandler(this)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="780" width="420" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_genericEvt" value="Network GENERIC&#10;dispatch CustomEvent&#10;event name plus data" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="700" y="780" width="360" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_snapshotEvt" value="Network SNAPSHOT&#10;onSnapshot(event)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="800" width="370" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Nodes: Snapshot Processing -->
+        <mxCell id="d_disposed2" value="disposed?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1040" width="120" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_sceneExists" value="scene exists?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="410" y="1040" width="140" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_extract" value="extract snapshots&#10;playerSnapshot&#10;zurgSnapshot&#10;windowSnapshot" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="580" y="1035" width="320" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_players" value="players&#10;local: seed inputBuffer once&#10;others: reuse or load model&#10;update rotation and position&#10;optional gun attach&#10;cleanup missing uuids return to pools" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1140" width="540" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_zurgs" value="zurgs&#10;update health&#10;face target position&#10;set position" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="820" y="1140" width="300" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_windows" value="windows&#10;update windowHealth array&#10;if windows loaded&#10;toggle boards render based on health" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="1140" width="310" height="170" as="geometry"/>
+        </mxCell>
+
+        <!-- Nodes: Fixed Tick -->
+        <mxCell id="n_updateLoop" value="update()&#10;accumulate deltaTime&#10;while accumulator meets fixedTickRate&#10;call onFixedUpdate()" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1560" width="420" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_netConnected" value="net connected?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1560" width="140" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_camera" value="camera exists?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1560" width="140" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_seeded" value="inputBuffer seeded?" style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1560" width="160" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_buildSend" value="build inputState from InputManager&#10;get directional vectors from camera matrix&#10;simulate to get target position&#10;push inputPacket to inputBuffer and inputMap&#10;sendInputState(packet)&#10;clientTick plus one" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="1540" width="250" height="160" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_renderInterp" value="optional render interpolation&#10;alpha = accumulator / fixedTickRate&#10;lerp start to target&#10;camera setPosition is commented out" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1680" width="420" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Nodes: Local Events -->
+        <mxCell id="n_shoot" value="shoot event&#10;raycast AABB vs MESHES&#10;for each hit with metadata zid&#10;sendMessage shoot with zid" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="2000" width="560" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_rebuild" value="rebuild event&#10;find nearest window box&#10;if distance at most 5&#10;sendMessage rebuild with wid" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="840" y="2000" width="610" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Dispose -->
+        <mxCell id="n_end" value="END" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="140" y="2295" width="90" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="n_dispose" value="dispose()&#10;remove listeners&#10;disconnect and close socket&#10;clear pools refs maps for garbage collection" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="260" y="2280" width="1190" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_start" target="n_ctor">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_ctor" target="n_defineHandlers">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_defineHandlers" target="n_attachNet">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_ctor" target="n_subScene">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_subScene" target="n_sceneInit">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_sceneInit" target="d_disposed1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="no" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_disposed1" target="n_bindLoaders">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_bindLoaders" target="n_windowsInit">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_bindLoaders" target="n_fillPools">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_fillPools" target="n_bindLocalEvents">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_bindLocalEvents" target="d_connectOnce">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e12" value="no" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_connectOnce" target="n_connect">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_snapshotEvt" target="d_disposed2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e14" value="no" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_disposed2" target="d_sceneExists">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e15" value="yes" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_sceneExists" target="n_extract">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_extract" target="n_players">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_extract" target="n_zurgs">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_extract" target="n_windows">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_updateLoop" target="d_netConnected">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e20" value="yes" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_netConnected" target="d_camera">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e21" value="yes" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_camera" target="d_seeded">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e22" value="yes" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="d_seeded" target="n_buildSend">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_updateLoop" target="n_renderInterp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_end" target="n_dispose">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_shoot" target="n_dispose">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;" edge="1" parent="1" source="n_rebuild" target="n_dispose">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Light dashed links to show progression -->
+        <mxCell id="e27" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="n_connect" target="n_connectedEvt">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e28" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="n_connectedEvt" target="n_snapshotEvt">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e29" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="n_snapshotEvt" target="n_updateLoop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e30" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="n_updateLoop" target="n_shoot">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

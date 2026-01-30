@@ -90,7 +90,8 @@ export default class GameSession extends EventTarget{
                 for (let i = 0; i < snapshot.length; i++) {
                     let playerState = snapshot[i];
                     if (playerState.clientId === this.uuid) {
-                        this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
+                        //if local player ignore positional update
+                        //this.scene.setCameraPosition(playerState.position.x, playerState.position.y, playerState.position.z);
                     }else{
                         //case brand new uuid
                         let model = this.modelPool.get(playerState.clientId);
@@ -148,13 +149,11 @@ export default class GameSession extends EventTarget{
     clientTick = 0;
     onFixedUpdate(tickRate){
 
-        //TODO: add state for Looping/Updating instead of using NetworkClient state
         if(this.networkClient.state === NetworkClient.STATES.CONNECTED){
-            //TODO: a way client can send to server which zombies get shot
-            //TODO: send zombie health
-            //TODO: send player health
-            //TODO: send player ammo
-            //TODO: client running same window logic
+            
+            //for now this is server authoritative, client only sends input and waits for result from server
+            //which is just the regular snapshot
+            console.log("wtf");
             if(this.camera){
                 this.networkClient.sendInputState({
                 clientTick:this.clientTick,
