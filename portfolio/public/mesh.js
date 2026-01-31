@@ -1,4 +1,4 @@
-class Matrix {
+export class Matrix {
     m;
     constructor(M = new Float32Array([])) {
         this.m = M;
@@ -42,7 +42,7 @@ class Matrix {
     }
 }
 
-class Mesh {
+export class Mesh {
     m;
     T;
     R;
@@ -365,7 +365,7 @@ class Mesh {
     };
 }
 
-class Cube extends Mesh {
+export class Cube extends Mesh {
     constructor(uv = false) {
         if (uv) {
             // let importCube = async () => {
@@ -688,7 +688,7 @@ class Cube extends Mesh {
 
 
 //idk wtf this doing but it work good enough
-class BoundingBoxMesh extends Mesh {
+export class BoundingBoxMesh extends Mesh {
   constructor(targetMesh, color = [1, 1, 1, 1]) {
         const hx = targetMesh.length.x / 2;
         const hy = targetMesh.length.y / 2;

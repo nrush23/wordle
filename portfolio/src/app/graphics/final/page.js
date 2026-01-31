@@ -12,6 +12,10 @@ import GameSession from '../../../../public/network/gameSession.js';
 import NetworkClient from '../../../../public/network/networkClient.js';
 import InputManager from '../../../../public/network/inputManager.js';
 import createEventBus from "../../../../public/network/Events/eventBus.js";
+
+import WebGLRenderer from "../../../../public/network/ReactWebGl/webgl";
+import Parser from "../../../../public/network/ReactWebGl/parser.js";
+import {Scene} from "../../../../public/network/ReactWebGl/renderer.js";
 //end testing
 
 export default function Final() {
@@ -20,7 +24,7 @@ export default function Final() {
   const inputManager = useRef(new InputManager());
   const networkClient = useRef(new NetworkClient());
   const gameSession = useRef(new GameSession(eventBus.current, networkClient.current, inputManager.current));
-
+  const webGLRenderer = useRef(new WebGLRenderer());
   // Track when scripts are ready (so we can safely call Scene/gl_start)
   const [scriptsReady, setScriptsReady] = useState(false);
 
@@ -45,10 +49,10 @@ export default function Final() {
     // Parser, Scene, gl_start are globals coming from your scripts
     Parser.prefix = prefix;
     gameSession.current.prefix = prefix;
-    const scene = new Scene(canvas, prefix, gameSession.current);
+    const scene = new Scene(canvas, prefix, gameSession.current, webGLRenderer.current);
 
     // IMPORTANT: your patched gl_start should RETURN a cleanup function
-    const stop = gl_start(canvas, scene);
+    const stop = webGLRenderer.current.gl_start(canvas, scene);
 
     return () => {
       console.log("RUNNING CLEANUP ");
@@ -83,12 +87,7 @@ export default function Final() {
             pointerEvents: "none", // so it never interferes with input
           }}
         />
-        <Script src={`${prefix}/final/renderer.js`} strategy="afterInteractive"></Script>
-        <Script src={`${prefix}/mesh.js`} strategy="afterInteractive"></Script>
-        <Script src={`${prefix}/parser.js`} strategy="afterInteractive"></Script>
-        {/* Full screen the game, NO INSTRUCTIONS*/}
-        <Script src={`${prefix}/webgl.js`} strategy="afterInteractive" onLoad={() => setScriptsReady(true)}></Script>
-      </main>
+        </main>
     </div>
   );
 }

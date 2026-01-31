@@ -6,6 +6,8 @@ import WindowManager from "../final/gameLogic/WindowManager.js";
 import Zurg from "../final/gameLogic/zurg.js";
 import Vector3 from "./vector3.js";
 
+import Parser from "./ReactWebGl/parser.js";
+
 //client side prediction code
 import {simulate, ClientCommandRing, getInputCommand, InputState}  from "./clientSidePrediction.js";
 
