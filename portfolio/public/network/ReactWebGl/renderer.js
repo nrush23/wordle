@@ -2,6 +2,7 @@ import { Matrix, Cube } from "../../mesh.js";
 import Parser from "./parser.js";
 import { webglMath, PMatrix } from "./math.js";
 import { Mesh } from "../../mesh.js";
+import createTextMesh from "./linefont.js";
 const LOI = [[8.4, 5.79], [0.06, 5.47], [-0.09, -5.5], [7.25, -0.02], [3.97, -6.36], [4.46, 6.68], [-0.14, 0.03], [-2.55, 7.25], [-4.44, 1.53], [-4.3, -4.77]];
 
 const X_MAX = 38.75;
@@ -46,6 +47,12 @@ export class Scene {
       this.MESHES.push(this.ARMS);
       this.MESHES = this.MESHES.flat();
 
+      this.crosshairMesh = new Cube(true);
+      this.crosshairMesh.scale(0.01, 0.01, 0.01); // Make it tiny
+      this.crosshairMesh.applyAll();
+      
+      // Create the data
+      this.healthMesh = createTextMesh("hello world!");
 
       this.vertexShader = `\
 #version 300 es
@@ -615,6 +622,57 @@ void main() {
             this.webGlRenderer.setUniform('1i', 'uID', mesh.textID);
          }
          this.webGlRenderer.drawMesh(mesh.mesh);
+      }
+
+      if (this.C) {
+         const gl = this.webGlRenderer.gl;
+         gl.disable(gl.DEPTH_TEST);
+
+         const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+         this.webGlRenderer.setUniform('Matrix4fv', 'uMV', false, identity);
+
+         // --- NEW: USE ORTHO INSTEAD OF IDENTITY ---
+         // This maps 0,0 to center and handles aspect ratio stretching
+         const aspect = this.canvas.width / this.canvas.height;
+         const orthoP = [
+            1 / aspect, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+         ];
+         this.webGlRenderer.setUniform('Matrix4fv', 'uMP', false, orthoP);
+
+         if (this.crosshairMesh) {
+            let M = this.crosshairMesh.getWorldMatrix();
+            this.webGlRenderer.setUniform('Matrix4fv', 'uMF', false, M);
+            this.webGlRenderer.setUniform('4fv', 'uC', [1, 0, 0, 1]);
+            this.webGlRenderer.drawMesh(this.crosshairMesh.mesh);
+         }
+
+         if (this.healthMesh) {
+            // 1. Move it to the corner (Identity space: -1 to 1)
+            // Note: aspect correction for X makes it stay in the far left
+            this.healthMesh.setPosition(-0.9 * aspect, 0.8, 0);
+
+            // 2. Standard Matrix and Uniform setup
+            let M = this.healthMesh.getWorldMatrix();
+            this.webGlRenderer.setUniform('Matrix4fv', 'uMF', false, M);
+            this.webGlRenderer.setUniform('Matrix4fv', 'uMI', false, webglMath.inverse(M));
+            this.webGlRenderer.setUniform('4fv', 'uC', [0, 1, 0, 1]); // Green
+
+            // 3. Skip texture sampling
+            this.webGlRenderer.setUniform('1i', 'uID', -1);
+
+            // 4. Same draw call as crosshair
+            this.webGlRenderer.drawMesh(this.healthMesh.mesh);
+         }
+
+         gl.enable(gl.DEPTH_TEST);
+
+         // IMPORTANT: Reset the 3D Camera/Projection
+         this.updateCam();
+         let P = this.persp(Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 200);
+         this.webGlRenderer.setUniform('Matrix4fv', 'uMP', false, P.m);
       }
    }
 

@@ -181,11 +181,11 @@ export default class NetworkClient extends EventTarget{
             }
         ));
     }
-    sendInputState(inputState){
+    sendInputState(inputCommand){
         this.transport.send(JSON.stringify(
             {
                 id: 10,
-                inputState:inputState
+                inputCommand:inputCommand
             }
         ));
     }

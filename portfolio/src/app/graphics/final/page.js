@@ -16,25 +16,38 @@ import createEventBus from "../../../../public/network/Events/eventBus.js";
 import WebGLRenderer from "../../../../public/network/ReactWebGl/webgl";
 import Parser from "../../../../public/network/ReactWebGl/parser.js";
 import {Scene} from "../../../../public/network/ReactWebGl/renderer.js";
+import { webglMath } from "../../../../public/network/ReactWebGl/math";
 //end testing
 
 export default function Final() {
 
-  const eventBus = useRef(createEventBus());
-  const inputManager = useRef(new InputManager());
-  const networkClient = useRef(new NetworkClient());
-  const gameSession = useRef(new GameSession(eventBus.current, networkClient.current, inputManager.current));
-  const webGLRenderer = useRef(new WebGLRenderer());
-  // Track when scripts are ready (so we can safely call Scene/gl_start)
-  const [scriptsReady, setScriptsReady] = useState(false);
+  const eventBus = useRef(null);
+  const inputManager = useRef(null);
+  const networkClient = useRef(null);
+  const gameSession = useRef(null);
+  const webGLRenderer = useRef(null);
+  const scene = useRef(null);
+  const stopFn = useRef(null);
 
   useEffect(() => {
-    
     const canvas = document.getElementById("glcanvas");
-    if (!canvas) return;
+    if(webGLRenderer.current === null){
+      
+      eventBus.current = createEventBus();
+      inputManager.current = new InputManager();
+      // 1) Input listeners (paired add/remove)
+      inputManager.current.addListeners(canvas);
+      networkClient.current = new NetworkClient();
+      gameSession.current = new GameSession(eventBus.current, networkClient.current, inputManager.current);
+      webGLRenderer.current = new WebGLRenderer();
+      Parser.prefix = prefix;
+      gameSession.current.prefix = prefix;
+      scene.current = new Scene(canvas, prefix, gameSession.current, webGLRenderer.current);
+      stopFn.current = webGLRenderer.current.gl_start(canvas, scene.current);
 
-    // 1) Input listeners (paired add/remove)
-    inputManager.current.addListeners(canvas);
+    }
+
+    
 
     // 2) Resize handling (paired add/remove)
     function resizeWindow() {
@@ -45,17 +58,12 @@ export default function Final() {
     resizeWindow();
     window.addEventListener("resize", resizeWindow);
 
-    // 3) Parser prefix + WebGL start
-    // Parser, Scene, gl_start are globals coming from your scripts
-    Parser.prefix = prefix;
-    gameSession.current.prefix = prefix;
-    const scene = new Scene(canvas, prefix, gameSession.current, webGLRenderer.current);
-
     // IMPORTANT: your patched gl_start should RETURN a cleanup function
-    const stop = webGLRenderer.current.gl_start(canvas, scene);
+    
 
     return () => {
       console.log("RUNNING CLEANUP ");
+      stopFn.current();
       // Clean up in reverse order
       window.removeEventListener("resize", resizeWindow);
       try {
@@ -67,7 +75,7 @@ export default function Final() {
       }
       inputManager.current.removeListeners(canvas);
     };
-  }, [scriptsReady]);
+  }, []);
   
   return (
     <div className="font-sans min-h-screen flex flex-col">

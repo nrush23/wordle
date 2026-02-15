@@ -9,7 +9,7 @@ import Vector3 from "./vector3.js";
 import Parser from "./ReactWebGl/parser.js";
 
 //client side prediction code
-import {simulate, ClientCommandRing, getInputCommand, InputState}  from "./clientSidePrediction.js";
+import {simulate, ClientCommandRing, getInputCommand, InputState, ClientInputBuffer, InputCommand}  from "./clientSidePrediction.js";
 
 /** @class GameSession class to handle high level game functions such as world building */
 export default class GameSession extends EventTarget {
@@ -504,16 +504,16 @@ export default class GameSession extends EventTarget {
     }
     
     commandNumber = 0;
-    clientCommandRing = new ClientCommandRing();
+    clientTick = 0;
     lastSendCommand = -1;
     networkSendTick = 0;
     boolFirstCommandSent = false;
-    onInputValidate(event){
-        //console.log(event.detail.inputCommand.targetPosition);
-        //console.log(event.detail.trueResult);
+    inputBuffer = new ClientInputBuffer();
 
+    onInputValidate(event){
+        
         let inputCommand = event.detail.inputCommand;
-        this.clientCommandRing.confirmAcknowledge(inputCommand);
+        //this.clientCommandRing.confirmAcknowledge(inputCommand);
 
         let clientSideTargetPosition = event.detail.inputCommand.targetPosition;
         let truePosition = event.detail.trueResult;
@@ -525,94 +525,68 @@ export default class GameSession extends EventTarget {
         ){
             matched = true;
         }
-
-        
-        
-        
+        console.log(inputCommand.commandNumber);
+        console.log(matched);
         if(!matched){
-            console.log("no match");
-            let wrongCommand = this.clientCommandRing.get(inputCommand.commandNumber);
-            console.log("start "+ this._sessionId);
-            console.log(this.clientCommandRing.latestCommand);
-            console.log(this.clientCommandRing.lastAcknowledgedCommand);
-            console.log(inputCommand.commandNumber);
-            console.log(wrongCommand);
-            console.log("end "+ this._sessionId);
-            /*wrongCommand.command.targetPosition.x = truePosition.x;
-            wrongCommand.command.targetPosition.y = truePosition.y;
-            wrongCommand.command.targetPosition.z = truePosition.z;
+            let command = this.inputBuffer.getInput(inputCommand.commandNumber);
 
-            for (let i = this.clientCommandRing.lastAcknowledgedCommand + 1; i <= this.clientCommandRing.latestCommand; i++) {
-                const command1 = this.clientCommandRing.get(i-1);
-                const command2 = this.clientCommandRing.get(i);
-                if (!command2) break; // overwritten: too much time passed
-                command2.command.startPosition = command1.command.targetPosition;
-                command2.command.targetPosition = simulate(command2.command,command2.command.startPosition);
-            }*/
+            //it most likely is the number but just in case
+            if(command.commandNumber == inputCommand.commandNumber){
+                command.targetPosition.x = event.detail.trueResult.x;
+                command.targetPosition.y = event.detail.trueResult.y;
+                command.targetPosition.z = event.detail.trueResult.z;
+                for (let i = inputCommand.commandNumber; i < this.inputBuffer.length - 1; i++) {
+                    const command1 = this.clientCommandRing.get(i);
+                    const command2 = this.clientCommandRing.get(i + 1);
+                    command2.startPosition.x = command1.targetPosition.x;
+                    command2.startPosition.y = command1.targetPosition.y;
+                    command2.startPosition.z = command1.targetPosition.z;
+                    command2.targetPosition = simulate(command2, command2.startPosition);
+                }
+            }
+            
         }
+        
+        return;
     }
     onFixedUpdate(tickRate) {
        
 
         if (this.networkClient.state === NetworkClient.STATES.CONNECTED) {
 
-            //network send loop
-            if (this.networkSendTick == 1) {
-                if (!this.boolFirstCommandSent) {
-                    //there are commands in the buffer
-                    if (this.clientCommandRing.latestCommand !== -1) {
-                        // a command was sent but not acknowledged
-                        if (this.clientCommandRing.lastAcknowledgedCommand == -1) {
-
-                        }
-                    }
-                }
-                //send packets
-                this.networkSendTick = 0;
-            }
-            this.networkSendTick += 1;
-
             if (this.camera) {
                 //make sure camera exists
-                let inputState = new InputState({
-                    forward: this.inputManager.forward,
-                    backward: this.inputManager.backward,
-                    left: this.inputManager.left,
-                    right: this.inputManager.right,
-                    directionalVectors: this.getDirectionalVectors(this.camera.Q.m)
-                });
-                let startPosition = new Vector3();
+
+                
+
+                
+
+                //get created input object at slot
+                let inputCommand = this.inputBuffer.getInput(this.commandNumber);
+                inputCommand.commandNumber = this.commandNumber;
+                inputCommand.clientTick = this.clientTick;
+                
+                //copy new inputState into bucket
+                inputCommand.inputState.forward = this.inputManager.forward;
+                inputCommand.inputState.backward = this.inputManager.backward;
+                inputCommand.inputState.left = this.inputManager.left;
+                inputCommand.inputState.right = this.inputManager.right;
+                inputCommand.inputState.directionalVectors = this.getDirectionalVectors(this.camera.Q.m); //note: creates garbage
+
+                //copy camera into input startPosition
                 if (this.commandNumber == 0) {
-                    startPosition.x = this.camera.getPosition(false).x;
-                    startPosition.y = this.camera.getPosition(false).y;
-                    startPosition.z = this.camera.getPosition(false).z;
+                    inputCommand.startPosition.x = this.camera.getPosition(false).x;
+                    inputCommand.startPosition.y = this.camera.getPosition(false).y;
+                    inputCommand.startPosition.z = this.camera.getPosition(false).z;
                 }
                 else{
-                    //THIS IS A REFERENCE
-                    startPosition.x = this.clientCommandRing.get(this.commandNumber - 1).command.targetPosition.x;
-                    startPosition.y = this.clientCommandRing.get(this.commandNumber - 1).command.targetPosition.y;
-                    startPosition.z = this.clientCommandRing.get(this.commandNumber - 1).command.targetPosition.z;
+                    //avoiding garbage here
+                    inputCommand.startPosition.copy(this.inputBuffer.getInput(this.commandNumber - 1).targetPosition);
                 }
-
-                let result = simulate(inputState, startPosition);
-
-                let inputCommand = {
-                    //commandNumber id and tick id
-                    commandNumber: this.commandNumber,
-                    clientTick: this.clientTick,
-                    //input state
-                    forward: inputState.forward,
-                    backward: inputState.backward,
-                    left: inputState.left,
-                    right: inputState.right,
-                    directionalVectors: inputState.directionalVectors,
-
-                    //input validation extras
-                    rotation: this.camera.getRotationRadians(),
-                    startPosition: startPosition,
-                    targetPosition: result
-                };
-                this.clientCommandRing.set(inputCommand);
+                
+                inputCommand.targetPosition.copy(simulate(inputCommand.inputState, inputCommand.startPosition)); //note: creates garbage
+                inputCommand.rotation = this.camera.getRotationRadians();
+                
                 this.networkClient.sendInputState(inputCommand);
                 this.commandNumber += 1;
                 this.clientTick += 1;
@@ -644,7 +618,7 @@ export default class GameSession extends EventTarget {
         }
         if(this.camera){
             if (this.commandNumber > 1){
-                let command = this.clientCommandRing.get(this.commandNumber -1).command;
+                let command = this.inputBuffer.getInput(this.commandNumber-1);
                 let goal = Vector3.moveTowards(command.startPosition,command.targetPosition,this.fixedTickAccumulator/this.fixedTickRate);
                 this.camera.setPosition(goal.x,goal.y,goal.z);
             }
@@ -655,26 +629,10 @@ export default class GameSession extends EventTarget {
 
     //helper
     getDirectionalVectors = (matrix) => {
-        let forward = {
-            x: -matrix[8],
-            y: -matrix[9],
-            z: -matrix[10]
-        };
-        let right = {
-            x: matrix[0],
-            y: matrix[1],
-            z: matrix[2]
-        };
-
-        let up = {
-            x: matrix[4],
-            y: matrix[5],
-            z: matrix[6]
-        };
         return {
-            forward: forward,
-            right: right,
-            up: up
+            forward: new Vector3(-matrix[8],-matrix[9],-matrix[10]),
+            right: new Vector3(matrix[0],matrix[1],matrix[2]),
+            up: new Vector3(matrix[4],matrix[5],matrix[6])
         };
     }
     lerpVec3(a, b, t) {

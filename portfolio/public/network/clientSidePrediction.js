@@ -9,18 +9,89 @@ export class InputState {
     right;
     directionalVectors;
 
-    constructor({
+    constructor(
         forward = false,
         backward = false,
         left = false,
         right = false,
-        directionalVectors = null
-    } = {}) {
+        directionalVectors = {forward:new Vector3(), up:new Vector3(), right:new Vector3()}
+    ) {
         this.forward = forward;
         this.backward = backward;
         this.left = left;
         this.right = right;
         this.directionalVectors = directionalVectors;
+    }
+    /**@param {InputState} inputState  */
+    copy(inputState){
+        this.forward = inputState.forward;
+        this.backward = inputState.backward;
+        this.left = inputState.left;
+        this.right = inputState.right;
+        this.directionalVectors.forward.copy(inputState.directionalVectors.forward);
+        this.directionalVectors.up.copy(inputState.directionalVectors.up);
+        this.directionalVectors.right.copy(inputState.directionalVectors.right);
+    }
+}
+export class InputCommand{
+    /** @type {Number} */
+    commandNumber;
+    /** @type {Number} */
+    clientTick;
+    /** @type {InputState} */
+    inputState;
+
+    //debug;
+    /** @type {Vector3} */
+    startPosition;
+    /** @type {Vector3} */
+    targetPosition;
+    /** @type {Vector3} */
+    rotation;
+    constructor(
+        commandNumber = -1,
+        clientTick = 0,
+        inputState = new InputState(),
+        startPosition = new Vector3(),
+        targetPosition = new Vector3(),
+        rotation = new Vector3()
+    ){
+        this.commandNumber = commandNumber;
+        this.clientTick = clientTick;
+        this.inputState = inputState;
+        this.startPosition = startPosition;
+        this.targetPosition = targetPosition;
+        this.rotation = rotation;
+    }
+    /** @param {InputCommand} command */
+    set(command){
+        this.commandNumber = command.commandNumber;
+        this.clientTick = command.clientTick;
+        this.inputState.copy(command.inputState);
+        this.startPosition.copy(command.startPosition);
+        this.targetPosition.copy(command.targetPosition);
+        this.rotation.copy(command.rotation);
+    }
+}
+export class ClientInputBuffer{
+    static BUFFER_SIZE = 128;
+    _buffer;
+    constructor(){
+        //init size 128 bufer
+        this._buffer = new Array(ClientInputBuffer.BUFFER_SIZE);
+        for(let i = 0; i<ClientInputBuffer.BUFFER_SIZE;i++){
+            this._buffer[i] = new InputCommand();
+        }
+    }
+    addInput(commandNumber, inputCommand){
+        let index = commandNumber % ClientInputBuffer.BUFFER_SIZE;
+        let command = this._buffer[index];
+        //console.log();
+        command.set(inputCommand);
+    }
+    getInput(commandNumber){
+        let index = commandNumber % ClientInputBuffer.BUFFER_SIZE;
+        return this._buffer[index];
     }
 }
 export class ClientCommandRing {

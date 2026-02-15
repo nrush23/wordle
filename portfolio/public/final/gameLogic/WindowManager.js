@@ -1,3 +1,5 @@
+import Parser from "../../network/ReactWebGl/parser.js";
+import { Mesh } from "../../mesh.js";
 const WINDOW_NAMES = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9']; //Window names
 const BOX_NAMES = ['wb1', 'wb2', 'wb3', 'wb4', 'wb5', 'wb6', 'wb7', 'wb8', 'wb9']; //Hit Box Names
 export default class WindowManager {

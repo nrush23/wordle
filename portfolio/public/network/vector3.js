@@ -30,4 +30,10 @@ export default class Vector3 {
             z: start.z + dz * t
         };
     }
+    /** @param {Vector3} vec3  */
+    copy(vec3){
+        this.x = vec3.x;
+        this.y = vec3.y;
+        this.z = vec3.z;
+    }
 }

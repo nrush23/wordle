@@ -57,7 +57,7 @@ vec3 phong(vec3 N, vec3 L, vec3 W, vec3 diffuse, vec4 specular) {
                 console.log(this.gl);
                 this.gl = canvas.gl;
                 this.gl.program = this.gl.createProgram();
-                function addshader(gl,type, src) {
+                function addshader(gl,type, src) {;
                     let shader = gl.createShader(type);
                     gl.shaderSource(shader, src);
                     gl.compileShader(shader);

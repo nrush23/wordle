@@ -1,4 +1,53 @@
+import { Mesh } from "../../mesh.js";
 
+export default function createTextMesh(text, spacing = 70, thickness = 2) {
+    let vertices = [];
+    let xOffset = 0;
+    const scale = 0.001; 
+    const t = (thickness * scale) / 2; 
+
+    for (let char of text) {
+        const charData = linefont.find(f => f.name === char);
+        if (charData) {
+            charData.paths.forEach(path => {
+                for (let i = 0; i < path.length - 1; i++) {
+                    const x1 = (path[i][0] + xOffset) * scale;
+                    const y1 = -path[i][1] * scale;
+                    const x2 = (path[i+1][0] + xOffset) * scale;
+                    const y2 = -path[i+1][1] * scale;
+
+                    const dx = x2 - x1;
+                    const dy = y2 - y1;
+                    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const nx = (-dy / len) * t; 
+                    const ny = (dx / len) * t;  
+
+                    // Quad corners
+                    const p1 = [x1 + nx, y1 + ny, 0];
+                    const p2 = [x1 - nx, y1 - ny, 0];
+                    const p3 = [x2 + nx, y2 + ny, 0];
+                    const p4 = [x2 - nx, y2 - ny, 0];
+
+                    const pushV = (p) => {
+                        // Pos(3), Nor(3), UV(2) - matching your stride 8
+                        vertices.push(p[0], p[1], p[2], 0, 0, 1, 0, 0);
+                    };
+
+                    pushV(p1); pushV(p2); pushV(p3);
+                    pushV(p2); pushV(p4); pushV(p3);
+                }
+            });
+        }
+        xOffset += spacing;
+    }
+
+    const data = new Float32Array(vertices);
+    
+    // triangle_strip = false
+    // implicit = true (CRITICAL: Prevents recenter() from breaking the text)
+    // stride = 8
+    return new Mesh(data, false, true, 8);
+}
 let linefont = [
    { name: ' ', paths: [
    ] },
