@@ -15,6 +15,9 @@ import { simulate, ClientCommandRing, getInputCommand, InputState, ClientInputBu
 import SnapshotSystem from "./Systems/SnapshotSystem.js";
 import InputSystem from "./Systems/InputSystem.js";
 import PredictionSystem from "./Systems/PredictionSystem.js";
+import MeshManager from "./Systems/MeshManager.js";
+import InterpolationSystem from "./Systems/InterpolationSystem.js";
+import ShootingSystem from "./Systems/ShootingSystem.js";
 
 // Extracted Utilities
 import { getDirectionalVectors, lerpVec3 } from "./Utils/MathUtils.js";
@@ -53,23 +56,12 @@ export default class GameSession extends EventTarget {
         this.inputManager.gameShell = this;
         this.scene = undefined;
         this.camera = undefined;
-        this.modelPool = new Map();
-        this.unusedModels = [];
-        this.gunPool = [];
-        this.zurgModels = [];
-        this._connectedOnce = false;
-        this._shootBound = false;
-        this._inputValidate = false;
-        this._rebuildBound = false;
-
-        this.positionBuffer = [];
-        this.positionBufferIndex = 0;
-
-        //load zurg and durg functions
-        this.loadDurgModel = undefined;
-        this.loadZurgModel = undefined;
 
         this.windowManager = new WindowManager();
+        this.meshManager = new MeshManager(this);
+
+        this.windows = [];
+        this.windowHealth = [75, 50, 25, 75, 100, 0, 0, 0, 0];
         this.windows = [];
         this.windowHealth = [75, 50, 25, 75, 100, 0, 0, 0, 0];
 
@@ -77,25 +69,10 @@ export default class GameSession extends EventTarget {
         this.snapshotSystem = new SnapshotSystem(this);
         this.inputSystem = new InputSystem(this);
         this.predictionSystem = new PredictionSystem(this);
+        this.interpolationSystem = new InterpolationSystem(this);
+        this.shootingSystem = new ShootingSystem(this);
 
         this.MESHES = undefined;
-        this._onShoot = () => {
-            console.log("shooting");
-            if (!this.MESHES) return;
-
-            let directions = getDirectionalVectors(this.camera.Q.m);
-            let result = raycastMeshesAABBAllHits(this.camera.getPosition(), directions.forward, 1000, this.MESHES);
-            console.log(result);
-
-            if (result.length > 0) {
-                result.forEach((value) => {
-                    if (value.mesh.metadata && value.mesh.metadata.zid > -1) {
-                        console.log("hit zombie " + value.mesh.metadata.zid);
-                        this.sendMessage("shoot", { zid: value.mesh.metadata.zid });
-                    }
-                });
-            }
-        };
 
         this._onRebuild = (event) => {
             console.log(event.detail.message);
@@ -153,42 +130,17 @@ export default class GameSession extends EventTarget {
 
 
         const onSceneInitialized = (event) => {
-            //check if disposed
             if (this._disposed) return;
-
-
             console.log(` ${this._sessionId} gameSession id initialized`);
 
-
-            this.loadDurgModel = event.loadDurgModel;
-            this.loadZurgModel = event.loadZurgModel;
-
-            this.loadM1Garrand = event.loadM1Garrand;
-            this.loadThompson = event.loadThompson;
-            this.loadRifle = event.loadRifle;
-
-            this.MESHES = event.meshes;
             this.scene = event.scene;
-
-            const meshes = event.meshes;
             this.camera = event.camera;
 
-            /*const TEST_ZURG = new Zurg(1);
-            TEST_ZURG.makeBody().then(() => {
+            // Initialize assets through the MeshManager
+            this.meshManager.initialize(event).then(() => {
                 if (this._disposed) return;
-
-                TEST_ZURG.body.name = "test_zurg";
-
-                console.log(TEST_ZURG.body.getRotationRadians());
-                TEST_ZURG.body.setRotationRadians(0,90 * (Math.PI/180),0);
-                console.log(TEST_ZURG.body.getRotationRadians());
-
-                meshes.push(TEST_ZURG.body);
-
-            }, (error) => { });*/
-
-
-
+                console.log(` ${this._sessionId} MeshManager initialized`);
+            });
 
             this.windowManager.initialize().then((boards) => {
                 if (this._disposed) return;
@@ -204,75 +156,15 @@ export default class GameSession extends EventTarget {
                     });
                 }
                 for (let i = 0; i < boards.length; i++) {
-                    meshes.push(boards[i]);
+                    this.meshManager.meshes.push(boards[i]);
                 }
                 this.windowManager.initialized = true;
+            }).catch(console.error);
 
-
-            }, (error) => {
-                console.log(error);
-            });
-
-            //fill zurg pool
-            const MAX_ZURGS = 15;
-            this.zurgModels = [];
-            for (let i = 0; i < MAX_ZURGS; i++) {
-                this.loadZurgModel().then((mesh) => {
-                    if (this._disposed) return;
-                    console.log(this.zurgModels.length);
-                    let index = this.zurgModels.push(mesh) - 1;
-                    console.log("index" + index + " length: " + this.zurgModels.length);
-                    mesh.name = "zurg" + index;
-                    mesh.metadata = {
-                        zid: index,
-                        health: -1
-                    };
-                    console.log(mesh.metadata.zid);
-                    meshes.push(mesh);
-                }, (error) => { console.log(error) });
-            }
-
-            //fill pool
-            for (let i = 0; i < 10; i++) {
-                this.loadDurgModel().then((mesh) => {
-                    if (this._disposed) return;
-
-                    //let camCube = new Cube(true);
-                    //camCube.scale(.25,.25,.25);
-                    //camCube.setPosition(0,1,-1);
-                    //camCube.setParent(mesh);
-                    mesh.setPosition(0, -5, 0);
-                    mesh.metadata = {
-                        armed: false,
-                        gunModel: null
-                    };
-                    meshes.push(mesh);
-                    //meshes.push(camCube);
-                    let index = this.unusedModels.push(mesh);
-                    //console.log(`[GameSession][${this._sessionId}] generated new durg`);
-                    console.log(this.unusedModels[index - 1]);
-                }, (error) => {
-                    console.log(error);
-                });
-            }
-
-            for (let i = 0; i < 10; i++) {
-                this.loadM1Garrand().then((m1Mesh) => {
-                    if (this._disposed) return;
-                    m1Mesh.turnY(Math.PI / 180);
-                    //m1Mesh.setPosition(.3, 1.5, -1.8);
-                    m1Mesh.setPosition(-50 + (10 * i), -20, 0);
-                    //m1Mesh.setParent(camCube);
-                    meshes.push(m1Mesh);
-                    this.gunPool.push(m1Mesh);
-                });
-            }
+            // hook up events...
 
             //hook up shoot event, then connect
-            if (!this._shootBound) {
-                this.addEventListener("shoot", this._onShoot);
-                this._shootBound = true;
-            }
+            this.shootingSystem.initialize();
 
             if (!this._rebuildBound) {
                 this.addEventListener("rebuild", this._onRebuild);
@@ -307,10 +199,7 @@ export default class GameSession extends EventTarget {
         this._disposed = true;
 
         //remove shoot listener
-        if (this._onShoot) {
-            this.removeEventListener('shoot', this._onShoot);
-            this._onShoot = false;
-        }
+        this.shootingSystem.dispose();
         if (this._inputValidate) {
             this.removeEventListener("INPUT_VALIDATE", this.onInputValidate);
             this._inputValidate = false;
@@ -331,19 +220,15 @@ export default class GameSession extends EventTarget {
         // drop references for GC
         this.scene = undefined;
         this.camera = undefined;
-        this.modelPool?.clear?.();
-        this.unusedModels = [];
-        this.zurgModels = [];
+        this.meshManager.dispose();
+        this.meshManager = null;
+        this.interpolationSystem = null;
+        this.shootingSystem = null;
         this.windows = [];
-        this.MESHES = null;
         this.windowManager = null;
-        this.loadDurgModel = undefined;
-        this.loadZurgModel = undefined;
         this._netHandlers = [];
         this._unsubs = [];
-        this.positionBuffer = [];
-        this.positionBufferIndex = 0;
-        this.gunPool = [];
+        this.gunPool = []; // just in case
         this.prefix = undefined;
     }
     updateWorld(snapshot) {
@@ -386,13 +271,9 @@ export default class GameSession extends EventTarget {
             this.onFixedUpdate(this.fixedTickRate);
             this.fixedTickAccumulator -= this.fixedTickRate;
         }
-        if (this.camera) {
-            if (this.commandNumber > 1) {
-                let command = this.inputBuffer.getInput(this.commandNumber - 1);
-                let goal = Vector3.moveTowards(command.startPosition, command.targetPosition, this.fixedTickAccumulator / this.fixedTickRate);
-                this.camera.setPosition(goal.x, goal.y, goal.z);
-            }
-        }
+
+        this.interpolationSystem.update();
+
         this.startTime = now;
         this.onUpdate(deltaTime);
     }

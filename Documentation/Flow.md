@@ -21,8 +21,10 @@ This document details how data moves through the systems and the sequence of fun
        - Samples `InputManager`.
        - `simulate()` movement (CSP).
        - `NetworkClient.sendInputState()` to server.
-2. **Variable Frame Update**: 
-   - `Vector3.moveTowards()` used for visual interpolation (Smoothing) between fixed ticks.
+3. **`InterpolationSystem.update()`**: Smoothing.
+   - Using alpha (fixedTickAccumulator / fixedTickRate) to transition between the last known positions.
+4. **Variable Frame Update**: 
+   - `onUpdate(deltaTime)` for non-fixed logic.
 
 ## 2. Data Flow
 

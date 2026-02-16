@@ -11,27 +11,27 @@ import WebSocketTransport from "./transport.js";
  */
 
 /** @class NetworkClient abstracted game network protocol manager to handle client server handshake and game level protocol messages; uses transport interface for now just websockets in future a udp protocol based on gaffer on games article*/
-export default class NetworkClient extends EventTarget{
+export default class NetworkClient extends EventTarget {
     static STATES = {
-        RECONNECTING:"reconnecting",
-        CONNECTING:"connecting",
-        CONNECTED:"connected",
-        DISCONNECTED:"disconnected"
+        RECONNECTING: "reconnecting",
+        CONNECTING: "connecting",
+        CONNECTED: "connected",
+        DISCONNECTED: "disconnected"
     };
-    static EVENTS ={
-        CONNECTED:"connected",
-        SNAPSHOT:"snapshot",
-        UUIDS:"uuids",
-        GENERIC:"generic"
+    static EVENTS = {
+        CONNECTED: "connected",
+        SNAPSHOT: "snapshot",
+        UUIDS: "uuids",
+        GENERIC: "generic"
     };
     static CODES = {
-        normal:0
+        normal: 0
     }
     state;
     timeSinceLastServerMessage;
     /** @type {Map<String,Number>} map of interval id's to make sure to close when the network client is disposed */
     intervals;
-    constructor(){
+    constructor() {
         super();
         this.state = NetworkClient.STATES.DISCONNECTED;
         this.intervals = new Map();
@@ -47,7 +47,7 @@ export default class NetworkClient extends EventTarget{
                 }
             }
         }, timeOut);
-        this.intervals.set("timeout",{intervalId:timeOutInterval});
+        this.intervals.set("timeout", { intervalId: timeOutInterval });
 
         let pingTime = 1000;
         let pingTimeInterval = setInterval(() => {
@@ -57,12 +57,12 @@ export default class NetworkClient extends EventTarget{
                 }
             }
         }, pingTime);
-        this.intervals.set("ping",{intervalId:pingTimeInterval});
+        this.intervals.set("ping", { intervalId: pingTimeInterval });
     }
-    clock(){
+    clock() {
 
     }
-    connect(url){
+    connect(url) {
         //if already attempting connection/reconnection
         if (this.state === NetworkClient.STATES.RECONNECTING || NetworkClient.state === NetworkClient.STATES.CONNECTING) {
             console.warn("[WebSocketTransport] connect() called while state =", this.state);
@@ -73,12 +73,12 @@ export default class NetworkClient extends EventTarget{
         this.state = NetworkClient.STATES.CONNECTING;
 
         // init transport in this case websocket client in future udp
-        this.transport  = new WebSocketTransport();
+        this.transport = new WebSocketTransport();
 
         //once underlying transport is ready to send messages send out handshake request
         this.transport.addEventListener("open", (event) => {
             console.log("[NetworkClient]transport open");
-            this.sendJoin({username:"no name yuh",secretKey:"asdasdasdasd"});
+            this.sendJoin({ username: "no name yuh", secretKey: "asdasdasdasd" });
         });
 
         //hook up different protocol level and game level packet messages
@@ -89,14 +89,16 @@ export default class NetworkClient extends EventTarget{
             try {
                 let packet = JSON.parse(data);
                 let id = packet.id;
-                switch(packet.id){
+                switch (packet.id) {
                     case 0://handshake complete; now transition to connected
                         let uuid = packet.uuid;
-                        console.log("{NetworkClient] finished connecting uuid id:"+uuid);
+                        console.log("{NetworkClient] finished connecting uuid id:" + uuid);
                         this.state = NetworkClient.STATES.CONNECTED;
-                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.CONNECTED,{detail:{
-                            uuid:uuid
-                        }}));
+                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.CONNECTED, {
+                            detail: {
+                                uuid: uuid
+                            }
+                        }));
                         //send first ping to avoid timeout
                         this.transport.send(JSON.stringify(
                             {
@@ -108,70 +110,75 @@ export default class NetworkClient extends EventTarget{
                     case 1://game state update
                         let uuids = packet.uuids;
                         console.log(packet.uuids);
-                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.UUIDS,{detail:{
-                            uuids:uuids
-                        }}));
+                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.UUIDS, {
+                            detail: {
+                                uuids: uuids
+                            }
+                        }));
                         break;
                     case 2://server pong
                         console.log("NetworkClient] received server pong");
                         break;
                     case 3:
-                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.SNAPSHOT,{detail:{
-                            snapshot:packet.snapshot
-                        }}));
+                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.SNAPSHOT, {
+                            detail: {
+                                snapshot: packet.snapshot
+                            }
+                        }));
                         break;
                     case 11: // generic event message 
-                    //console.log(packet);
-                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.GENERIC,{detail:{
-                            event:packet.event,
-                            data:packet.data
-                        }}))
+                        this.dispatchEvent(new CustomEvent(NetworkClient.EVENTS.GENERIC, {
+                            detail: {
+                                event: packet.event,
+                                data: packet.data
+                            }
+                        }))
                         break;
                     default:
-                        console.warn("[NetworkClient] unknown packet id received "+packet.id);
+                        console.warn("[NetworkClient] unknown packet id received " + packet.id);
                 }
             } catch (error) {
                 console.error("NetworkClient] Failed to parse JSON:", error.message);
-                this.transport.close(NetworkClient.CODES.normal,"failed to parse json");
+                this.transport.close(NetworkClient.CODES.normal, "failed to parse json");
             }
 
         });
-        this.transport.addEventListener("close",(event)=>{
+        this.transport.addEventListener("close", (event) => {
 
         });
-        this.transport.addEventListener("error",(event)=>{
+        this.transport.addEventListener("error", (event) => {
 
         });
         this.transport.connect(url);
         console.log("NetworkClient] connecting...");
     }
-    disconnect(code,reason){
+    disconnect(code, reason) {
 
     }
-    close(code,reason){
+    close(code, reason) {
         //make sure to clear intervals
-        this.intervals.forEach((value,key,map)=>{
+        this.intervals.forEach((value, key, map) => {
             clearInterval(value.intervalId);
         });
         this.intervals.clear();
     }
-    
+
     //send ping when in connected state only
-    sendPing(){
-        if(this.state === NetworkClient.STATES.CONNECTED){
+    sendPing() {
+        if (this.state === NetworkClient.STATES.CONNECTED) {
             this.transport.send(JSON.stringify(
                 {
                     id: 1,
-                    date:Date.now()
+                    date: Date.now()
                 }
             ));
         }
-        else{
+        else {
             console.warn("[NetworkClient] not in state to send packet STATE: " + this.state);
         }
     }
     //send join request aka first step of connection handshake
-    sendJoin(joinInfo){
+    sendJoin(joinInfo) {
         this.transport.send(JSON.stringify(
             {
                 id: 0,
@@ -181,30 +188,30 @@ export default class NetworkClient extends EventTarget{
             }
         ));
     }
-    sendInputState(inputCommand){
+    sendInputState(inputCommand) {
         this.transport.send(JSON.stringify(
             {
                 id: 10,
-                inputCommand:inputCommand
+                inputCommand: inputCommand
             }
         ));
     }
-    
-    sendMessage(event,data){
+
+    sendMessage(event, data) {
         this.transport.send(JSON.stringify(
             {
-                id:11,
-                event:event,
-                data:data
+                id: 11,
+                event: event,
+                data: data
             }
         ));
     }
-    sendChat(chatPacket){
+    sendChat(chatPacket) {
 
     }
-    
+
     //optional but probably will keep
-    getLatency(){
+    getLatency() {
 
     }
 

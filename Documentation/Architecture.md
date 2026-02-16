@@ -15,7 +15,8 @@ The project is structured with a Next.js frontend and a modular network simulati
 │       ├── Systems/                    <-- Logic Modules
 │       │   ├── InputSystem.js
 │       │   ├── PredictionSystem.js
-│       │   └── SnapshotSystem.js
+│       │   ├── SnapshotSystem.js
+│       │   └── InterpolationSystem.js
 │       ├── Utils/                      <-- Shared Helpers
 │       │   ├── MathUtils.js
 │       │   └── Raycast.js
@@ -47,13 +48,17 @@ The game simulation begins in **`portfolio/src/app/graphics/final/page.js`**.
 | `SnapshotSystem` | Processes incoming server states (Players, Zurgs, Windows) and updates the local scene. |
 | `InputSystem` | Samples input at a fixed rate (20Hz) and generates predicted movement commands. |
 | `PredictionSystem`| Validates server truth against client predictions and handles state reconciliation. |
-| `WindowManager` | Manages the health and rendering state of interactive window objects in the world. |
+| `InterpolationSystem`| Smooths visual movement (like camera) between fixed simulation ticks. |
+| `MeshManager` | Manages model pools and asset loading lifecycle. |
 | `Scene` | Manages the Babylon-like rendering graph and camera. |
 
 ## 4. Core Systems Description
 
-### Snapshot System
-Responsible for "Mirroring" the server's world state. It iterates through snapshots of players and entities, updating their positions and rotations, and managing the model pool (repurposing dormant meshes for new players).
+### Interpolation System
+Ensures that the jitter caused by a fixed simulation rate (20Hz) is not visible to the user. It calculates a "smoothing" position for entities based on how much time has passed since the last tick, creating fluid movement even at high frame rates.
+
+### Mesh Manager
+Centralizes model pools and asset loading lifecycle. It handles repurposing dormant meshes and filling pools for players, zurgs, and weapons.
 
 ### Input System & CSP
 Handles **Client-Side Prediction (CSP)**. Instead of waiting for the server to confirm a move, the client calculates the expected target position immediately based on user input. This ensures a responsive "lag-free" experience.

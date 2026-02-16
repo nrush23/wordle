@@ -24,7 +24,7 @@ export default class PredictionSystem {
             inputCommand.targetPosition.z === trueResult.z
         );
 
-        console.log(`[PredictionSystem] Command ${inputCommand.commandNumber} matched: ${matched}`);
+        //console.log(`[PredictionSystem] Command ${inputCommand.commandNumber} matched: ${matched}`);
 
         if (!matched) {
             this.reconcile(inputCommand.commandNumber, trueResult);

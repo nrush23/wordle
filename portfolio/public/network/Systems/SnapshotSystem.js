@@ -16,11 +16,11 @@ export default class SnapshotSystem {
     process(snapshot) {
         if (!this.gs.scene || this.gs._disposed) return;
 
-        const { playerSnapshot, zurgSnapshot, windowSnapshot } = snapshot;
+        const { players, zurgs, windows } = snapshot;
 
-        if (playerSnapshot) this.processPlayers(playerSnapshot);
-        if (zurgSnapshot) this.processZurgs(zurgSnapshot);
-        if (windowSnapshot) this.processWindows(windowSnapshot);
+        if (players) this.processPlayers(players);
+        if (zurgs) this.processZurgs(zurgs);
+        if (windows) this.processWindows(windows);
     }
 
     /**
@@ -28,7 +28,7 @@ export default class SnapshotSystem {
      * @param {Array} playerSnapshot
      */
     processPlayers(playerSnapshot) {
-        let currentUUIDs = [...this.gs.modelPool.keys()];
+        let currentUUIDs = [...this.gs.meshManager.modelPool.keys()];
 
         for (let i = 0; i < playerSnapshot.length; i++) {
             let playerState = playerSnapshot[i];
@@ -36,7 +36,7 @@ export default class SnapshotSystem {
             // Skip local player
             if (playerState.clientId === this.gs.uuid) continue;
 
-            let model = this.gs.modelPool.get(playerState.clientId);
+            let model = this.gs.meshManager.modelPool.get(playerState.clientId);
 
             if (model === undefined) {
                 this.handleNewPlayer(playerState);
@@ -60,16 +60,16 @@ export default class SnapshotSystem {
      * @param {Object} playerState
      */
     handleNewPlayer(playerState) {
-        if (this.gs.unusedModels.length > 0) {
-            let model = this.gs.unusedModels.pop();
+        if (this.gs.meshManager.unusedModels.length > 0) {
+            let model = this.gs.meshManager.unusedModels.pop();
             model.setRotationRadians(playerState.rotation.x, playerState.rotation.y, playerState.rotation.z);
             model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
-            this.gs.modelPool.set(playerState.clientId, model);
-        } else if (this.gs.MESHES && this.gs.loadDurgModel) {
-            this.gs.loadDurgModel().then((mesh) => {
+            this.gs.meshManager.modelPool.set(playerState.clientId, model);
+        } else if (this.gs.meshManager.meshes && this.gs.meshManager.loadDurgModel) {
+            this.gs.meshManager.loadDurgModel().then((mesh) => {
                 if (this.gs._disposed) return;
-                this.gs.MESHES.push(mesh);
-                this.gs.unusedModels.push(mesh);
+                this.gs.meshManager.meshes.push(mesh);
+                this.gs.meshManager.unusedModels.push(mesh);
             }).catch(console.error);
         }
     }
@@ -83,9 +83,9 @@ export default class SnapshotSystem {
         model.setRotationRadians(playerState.rotation.x, playerState.rotation.y, playerState.rotation.z);
         model.setPosition(playerState.position.x, playerState.position.y, playerState.position.z);
 
-        if (model.metadata && !model.metadata.armed && this.gs.gunPool.length > 0) {
+        if (model.metadata && !model.metadata.armed && this.gs.meshManager.gunPool.length > 0) {
             model.metadata.armed = true;
-            model.metadata.gunModel = this.gs.gunPool.pop();
+            model.metadata.gunModel = this.gs.meshManager.gunPool.pop();
             model.metadata.gunModel.setPosition(0, 1, 0);
             model.metadata.gunModel.setParent(model);
         }
@@ -98,7 +98,7 @@ export default class SnapshotSystem {
     cleanupPlayers(uuidsToCleanup) {
         for (let i = 0; i < uuidsToCleanup.length; i++) {
             let uuid = uuidsToCleanup[i];
-            let model = this.gs.modelPool.get(uuid);
+            let model = this.gs.meshManager.modelPool.get(uuid);
             if (!model) continue;
 
             model.setPosition(0, -5, 0);
@@ -107,11 +107,11 @@ export default class SnapshotSystem {
                 if (model.metadata.gunModel) {
                     model.metadata.gunModel.setParent(null);
                     model.metadata.gunModel.setPosition(0, -10, 0);
-                    this.gs.gunPool.push(model.metadata.gunModel);
+                    this.gs.meshManager.gunPool.push(model.metadata.gunModel);
                 }
             }
-            this.gs.unusedModels.push(model);
-            this.gs.modelPool.delete(uuid);
+            this.gs.meshManager.unusedModels.push(model);
+            this.gs.meshManager.modelPool.delete(uuid);
         }
     }
 
@@ -121,13 +121,13 @@ export default class SnapshotSystem {
      */
     processZurgs(zurgSnapshot) {
         for (let i = 0; i < zurgSnapshot.length; i++) {
-            let snapshot = zurgSnapshot[i];
-            let zurgModel = this.gs.zurgModels[snapshot.zid];
+            let snapshotValue = zurgSnapshot[i];
+            let zurgModel = this.gs.meshManager.zurgModels[snapshotValue.id];
             if (!zurgModel) continue;
 
-            zurgModel.metadata.health = snapshot.health;
+            zurgModel.metadata.health = snapshotValue.health.health;
             let currentPosition = zurgModel.getPosition();
-            let targetPosition = snapshot.targetPosition;
+            let targetPosition = snapshotValue.position;
 
             let direction = {
                 x: targetPosition.x - currentPosition.x,
@@ -137,7 +137,7 @@ export default class SnapshotSystem {
 
             zurgModel.clearRotation();
             zurgModel.turnY(-Math.atan2(direction.x, direction.z));
-            zurgModel.setPosition(snapshot.position.x, snapshot.position.y, snapshot.position.z);
+            zurgModel.setPosition(snapshotValue.position.x, snapshotValue.position.y, snapshotValue.position.z);
         }
     }
 
@@ -147,12 +147,14 @@ export default class SnapshotSystem {
      */
     processWindows(windowSnapshot) {
         for (let i = 0; i < windowSnapshot.length; i++) {
-            let snapshot = windowSnapshot[i];
-            this.gs.windowHealth[snapshot.windowId] = snapshot.health;
+            let snapshotValue = windowSnapshot[i];
+            const windowId = snapshotValue.id;
+            const health = snapshotValue.health.health;
 
-            if (this.gs.windows.length > 0) {
-                let health = snapshot.health;
-                let boards = this.gs.windows[snapshot.windowId].boards;
+            this.gs.windowHealth[windowId] = health;
+
+            if (this.gs.windows.length > windowId) {
+                let boards = this.gs.windows[windowId].boards;
 
                 // Boards visibility logic based on health % (100, 75, 50, 25, 0)
                 boards[0].render = health >= 100;
